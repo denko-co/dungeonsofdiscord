@@ -1,0 +1,14 @@
+{
+  "name": "dungeonsofdiscord",
+  "version": "0.1.0",
+  "description": "Man, this is gonna be a lot of JavaScript.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Frano Stanisic",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^11.3.2"
+  }
+}
