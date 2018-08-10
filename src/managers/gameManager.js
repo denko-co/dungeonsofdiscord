@@ -46,7 +46,8 @@ module.exports = class GameManager {
                 playersToAddress.push(user.id);
               }
             });
-            this.send(Util.mentionList(playersToAddress) + tr.letsRock);
+            await this.send(Util.mentionList(playersToAddress) + tr.letsRock);
+            // start the battle
           }
         }
         break;

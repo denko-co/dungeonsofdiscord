@@ -4,9 +4,15 @@ exports.convertName = function (name) {
   return shortened.charAt(0).toLowerCase() + shortened.slice(1);
 };
 
+const getMention = function (userId) {
+  return '<@' + userId + '>';
+};
+
+exports.getMention = getMention;
+
 exports.mentionList = function (userIdArray) {
   const mentionArray = userIdArray.map((userId) => {
-    return '<@' + userId + '>';
+    return getMention(userId);
   });
   return [mentionArray.slice(0, -1).join(', '), mentionArray.slice(-1)[0]].join(mentionArray.length < 2 ? '' : ' and ');
 };
