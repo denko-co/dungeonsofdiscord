@@ -18,7 +18,7 @@ module.exports = class GameManager {
 
   async send (string, saveId) {
     console.log('Sending \'' + string + '\'');
-    return this.bot.channels.get(this.channelId).send(string).then((message) => {
+    return this.bot.channels.get(this.channelId).send(string).then(message => {
       if (saveId) { this.messageId = message.id; }
       return message;
     });

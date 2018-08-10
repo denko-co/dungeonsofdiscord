@@ -1,6 +1,6 @@
 module.exports = class Character {
   // constructor for characters (players, enemies)
-  constructor (name, description, type, hp, speed, abilities, items, effects) {
+  constructor (name, description, type, hp, speed, logic, abilities, items, effects) {
     this.name = name;
     this.description = description;
     this.type = type;
@@ -8,6 +8,9 @@ module.exports = class Character {
 
     this.speed = speed || 'NORMAL';
 
+    if (logic && !logic['performTurn']) {
+      throw new Error('Don\'t supply logic without a performTurn method!');
+    }
     this.abilities = abilities || [];
     this.items = items || [];
     this.effects = effects || [];
