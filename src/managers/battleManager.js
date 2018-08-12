@@ -7,7 +7,7 @@ module.exports = class BattleManager {
     this.encounter = encounter;
     this.playerInFocus = null;
     this.queue = [];
-    this.battlefield = gamemanager.players.concat(encounter.positions.reverse());
+    this.battlefield = gamemanager.players.reverse().concat(encounter.positions);
     this.turn = 1;
   }
 
@@ -72,7 +72,6 @@ module.exports = class BattleManager {
       });
     });
     let queue = (_.shuffle(fast)).concat(_.shuffle(normal)).concat(_.shuffle(slow));
-    console.log(queue);
     return queue;
   }
 
@@ -137,10 +136,11 @@ module.exports = class BattleManager {
   }
 
   async useAbility (ability, caster, targets) {
-    let effect = _.clone(ability.effect); // Take  copy
+    let effect = _.clone(ability.effect); // Take copy
     if (ability.targets.number === 0) {
       // Battlefield effect
-      await effect.properties.onBattlefieldApply(this, caster, targets);
+      console.log(this.battlefield);
+      await effect.onBattlefieldApply(this, caster, targets);
       console.log(this.battlefield);
     }
   }

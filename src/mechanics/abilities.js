@@ -23,8 +23,8 @@ let abilities = {
     range: 1,
     icon: 'knife'
   },
-  trainingPreperation: {
-    name: 'Training Preperation',
+  trainingPreparation: {
+    name: 'Training Preparation',
     effect: Effects.getEffect('Summon', {
       toSummon: [Creatures.getCreature('Training Dummy')]
     }),

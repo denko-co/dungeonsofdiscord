@@ -4,14 +4,20 @@ const _ = require('underscore');
 exports.convertName = function (name) {
   // Algorithms xd
   let shortened = name.replace(/\s+/g, '');
-  return capitalise(shortened);
+  return uncapitalise(shortened);
 };
 
 const capitalise = function (string) {
-  return string.charAt(0).toLowerCase() + string.slice(1);
+  return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
 exports.capitalise = capitalise;
+
+const uncapitalise = function (string) {
+  return string.charAt(0).toLowerCase() + string.slice(1);
+};
+
+exports.uncapitalise = uncapitalise;
 
 const getMention = function (userId) {
   return '<@' + userId + '>';
@@ -50,7 +56,7 @@ exports.reduceList = function (list) {
   });
   let resultList = [];
   for (let ele in finalCounts) {
-    let result = finalCounts[ele] > 1 ? finalCounts[ele] + ' ' + pluralize(ele) : getIndefiniteArticle(ele) + ele;
+    let result = finalCounts[ele] > 1 ? finalCounts[ele] + ' ' + pluralize(ele) : getIndefiniteArticle(ele) + ' ' + ele;
     resultList.push(result);
   }
   return resultList;

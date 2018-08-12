@@ -27,14 +27,14 @@ let effects = {
       async onBattlefieldApply (battleManager, caster, locationsArray) {
         let currentSummon = 0;
         let summonedNames = [];
-        for (let i = 0; i < locationsArray; i++) {
+        for (let i = 0; i < locationsArray.length; i++) {
           battleManager.battlefield[locationsArray[i]].push(this.toSummon[currentSummon]);
           summonedNames.push(this.toSummon[currentSummon].name);
           currentSummon = currentSummon + 1 === this.toSummon.length ? 0 : currentSummon + 1;
         }
         var reducedList = Util.reduceList(summonedNames);
-        var s = reducedList.length >= 1 ? '' : 's';
-        await battleManager.send('A new challenger approaches!' + Util.capitalise(Util.formattedList(reducedList)) + 'join' + s + 'the fight!');
+        var s = reducedList.length > 1 ? '' : 's';
+        await battleManager.send('A new challenger approaches! ' + Util.capitalise(Util.formattedList(reducedList)) + ' join' + s + ' the fight!');
       }
     }
   }

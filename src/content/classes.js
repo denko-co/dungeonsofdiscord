@@ -1,3 +1,4 @@
+const Abilities = require('../mechanics/abilities.js');
 const Character = require('../mechanics/character.js');
 const Items = require('../mechanics/items.js');
 const Util = require('../util/util.js');
@@ -23,7 +24,14 @@ exports.getClass = function (name, playerId) {
   if (!classDetails) {
     throw new Error(`Class with name ${name} not found!`);
   }
-  let classToAdd = new Character(classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, classDetails.abilities, classDetails.items, classDetails.effects);
+  // See creatures.js
+  let abilities = [];
+  if (classDetails.abilityNames) {
+    for (let i = 0; i < classDetails.abilityNames.length; i++) {
+      abilities.push(Abilities.getAbility(classDetails.abilityNames[i]));
+    }
+  }
+  let classToAdd = new Character(classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, classDetails.items, classDetails.effects);
   classToAdd.owner = playerId;
   return classToAdd;
 };
