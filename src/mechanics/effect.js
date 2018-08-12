@@ -4,6 +4,11 @@ module.exports = class Effect {
     this.description = description;
     this.flavour = flavour;
     this.ticks = ticks;
+
+    this.currentTicks = null;
+    this.whoApplied = null;
+    this.turnApplied = null;
+
     this.required = required;
     for (let bind in bindings) {
       // should validate against list of valid effect bindings
@@ -12,5 +17,6 @@ module.exports = class Effect {
         this[bind] = bindings[bind];
       }
     }
+    this.state = null;
   }
 };

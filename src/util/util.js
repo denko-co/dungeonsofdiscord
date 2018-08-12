@@ -1,4 +1,5 @@
 const pluralize = require('pluralize');
+const _ = require('underscore');
 
 exports.convertName = function (name) {
   // Algorithms xd
@@ -60,4 +61,47 @@ exports.addReactions = function (message, reactionsArray) {
   message.react(reactionsArray.shift()).then(messageReaction => {
     this.addReactions(messageReaction.message, reactionsArray);
   });
+};
+
+exports.getVsText = function (vs) {
+  return 'Our heroes!\n/vs/\n' + vs + '!';
+};
+
+// Now THIS is a good meme
+
+exports.getBattleReadyText = function () {
+  const ready = [
+    'Good day for a swell battle!',
+    'This match will get red hot!',
+    'Here\'s a real high-class bout!',
+    'A great slam and then some!',
+    'A brawl is surely brewing!'
+  ];
+  return _.sample(ready);
+};
+
+exports.getBattleStartText = function () {
+  const wallop = [
+    'And begin!',
+    'Now go!',
+    'Here goes!',
+    'You\'re up!',
+    'It\'s on!'
+  ];
+  return _.sample(wallop);
+};
+
+exports.getEffectiveCharacters = function (arrayOfArrays) {
+  let playersArray = [];
+  let enemiesArray = [];
+  arrayOfArrays.forEach(subarray => {
+    subarray.forEach(character => {
+      if (character.owner) {
+        playersArray.push(character);
+      } else {
+        enemiesArray.push(character);
+      }
+    });
+  });
+  return {players: playersArray, enemies: enemiesArray};
 };

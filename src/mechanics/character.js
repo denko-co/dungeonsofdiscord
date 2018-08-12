@@ -11,6 +11,8 @@ module.exports = class Character {
     if (logic && !logic['performTurn']) {
       throw new Error('Don\'t supply logic without a performTurn method!');
     }
+    this.logic = logic;
+
     this.abilities = abilities || [];
     this.items = items || [];
     this.effects = effects || [];

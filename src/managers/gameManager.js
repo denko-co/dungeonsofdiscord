@@ -1,6 +1,8 @@
 const tr = require('../translations/translations.json');
 const Classes = require('../content/classes.js');
 const Util = require('../util/util.js');
+const Encounters = require('../content/encounters.js');
+const BattleManager = require('./battleManager.js');
 
 module.exports = class GameManager {
   constructor (bot, channelId) {
@@ -9,6 +11,8 @@ module.exports = class GameManager {
     this.messageId = null;
     this.players = [[], [], []];
     this.state = 'READY';
+    this.currentBattle = null;
+    this.battleNumber = 1;
   }
 
   async initialise () {
@@ -48,6 +52,8 @@ module.exports = class GameManager {
             });
             await this.send(Util.mentionList(playersToAddress) + tr.letsRock);
             // start the battle
+            this.currentBattle = new BattleManager(this, Encounters.getEncounter('Tutorial'));
+            await this.currentBattle.initialise();
           }
         }
         break;

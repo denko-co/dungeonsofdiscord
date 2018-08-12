@@ -1,6 +1,7 @@
 const _ = require('underscore');
 const Ability = require('./ability.js');
 const Effects = require('./effects.js');
+const Creatures = require('../content/creatures.js');
 const Util = require('../util/util.js');
 
 // Define all abilities
@@ -15,21 +16,29 @@ let abilities = {
       }
     }),
     cooldown: 0,
-    targets: 1,
-    distance: 1,
+    targets: {
+      number: 1,
+      type: 'ENEMY'
+    },
+    range: 1,
     icon: 'knife'
+  },
+  trainingPreperation: {
+    name: 'Training Preperation',
+    effect: Effects.getEffect('Summon', {
+      toSummon: [Creatures.getCreature('Training Dummy')]
+    }),
+    targets: {
+      number: 0
+    }
   }
 };
 
-for (let ability in abilities) {
-  let abilityDetails = abilities[ability];
-  abilities[ability] = new Ability(abilityDetails.name, abilityDetails.description, abilityDetails.flavour, abilityDetails.effect, abilityDetails.cooldown, abilityDetails.targets, abilityDetails.distance, abilityDetails.icon);
-}
-
 exports.getAbility = function (name) {
-  let abilityToAdd = _.clone(abilities[Util.convertName(name)]);
-  if (!abilityToAdd) {
+  let abilityDetails = abilities[Util.convertName(name)];
+  if (!abilityDetails) {
     throw new Error(`Ability with name ${name} not found!`);
   }
+  let abilityToAdd = new Ability(abilityDetails.name, abilityDetails.description, abilityDetails.flavour, abilityDetails.effect, abilityDetails.cooldown, abilityDetails.targets, abilityDetails.range, abilityDetails.icon);
   return abilityToAdd;
 };
