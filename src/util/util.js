@@ -64,13 +64,14 @@ exports.reduceList = function (list) {
 
 exports.addReactions = function (message, reactionsArray) {
   if (reactionsArray.length === 0) return;
-  message.react(reactionsArray.shift()).then(messageReaction => {
+  let reaction = reactionsArray.shift();
+  message.react(reaction).then(messageReaction => {
     this.addReactions(messageReaction.message, reactionsArray);
   });
 };
 
 exports.getVsText = function (vs) {
-  return 'Our heroes!\n/vs/\n' + vs + '!';
+  return 'Our heroes!\n**vs**\n' + vs + '!';
 };
 
 // Now THIS is a good meme
@@ -91,7 +92,7 @@ exports.getBattleStartText = function () {
     'And begin!',
     'Now go!',
     'Here goes!',
-    'You\'re up!',
+    // 'You\'re up!',
     'It\'s on!'
   ];
   return _.sample(wallop);
@@ -110,4 +111,8 @@ exports.getEffectiveCharacters = function (arrayOfArrays) {
     });
   });
   return {players: playersArray, enemies: enemiesArray};
+};
+
+exports.getNumbersAsEmoji = function () {
+  return ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣'];
 };

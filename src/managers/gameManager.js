@@ -33,31 +33,47 @@ module.exports = class GameManager {
     let message = messageReaction.message;
     switch (this.state) {
       case 'READY':
-        if (react === '✅') {
-          // Setup players and get ready to rumble
-          let ready = message.reactions.get('🙋');
-          if (ready.users.size <= 1) {
-            this.send(tr.tooSmall);
-            messageReaction.remove(user);
-          } else if (ready.users.size >= 4) {
-            this.send(tr.tooLarge);
-            messageReaction.remove(user);
-          } else {
-            let playersToAddress = [];
-            ready.users.forEach((user) => {
-              if (!user.bot) {
-                this.addPlayer(user.id);
-                playersToAddress.push(user.id);
-              }
-            });
-            await this.send(Util.mentionList(playersToAddress) + tr.letsRock);
-            // start the battle
-            this.currentBattle = new BattleManager(this, Encounters.getEncounter('Tutorial'));
-            await this.currentBattle.initialise();
-          }
+        if (react !== '✅') return;
+        // Setup players and get ready to rumble
+        let ready = message.reactions.get('🙋');
+        if (ready.users.size <= 1) {
+          this.send(tr.tooSmall);
+          messageReaction.remove(user);
+        } else if (ready.users.size >= 4) {
+          this.send(tr.tooLarge);
+          messageReaction.remove(user);
+        } else {
+          let playersToAddress = [];
+          ready.users.forEach((user) => {
+            if (!user.bot) {
+              this.addPlayer(user.id);
+              playersToAddress.push(user.id);
+            }
+          });
+          await this.send(Util.mentionList(playersToAddress) + tr.letsRock);
+          // start the battle
+          this.currentBattle = new BattleManager(this, Encounters.getEncounter('Tutorial'));
+          let initResult = await this.currentBattle.initialise();
+          if (initResult === 'EXPLORING') this.battleNumber++;
+          this.state = initResult;
         }
         break;
+      case 'BATTLING':
+        let turnResult = await this.currentBattle.performTurn({
+          messageReaction: messageReaction,
+          react: react,
+          user: user,
+          message: message
+        });
+        if (turnResult === 'EXPLORING') this.battleNumber++;
+        this.state = turnResult;
+        break;
     }
+  }
+
+  async handleMessage (message, user) {
+    let command = message.content.substring(1);
+    console.log(command);
   }
 
   addPlayer (userId) {

@@ -6,8 +6,8 @@ const Util = require('../util/util.js');
 
 // Define all abilities
 let abilities = {
-  chop: {
-    name: 'Chop',
+  whack: {
+    name: 'Whack',
     description: 'Deal 3-5 damage to 1 target.',
     flavour: 'Smack that!',
     effect: Effects.getEffect('Flat Damage', {
@@ -21,7 +21,7 @@ let abilities = {
       type: 'ENEMY'
     },
     range: 1,
-    icon: 'knife'
+    icon: '⚔'
   },
   trainingPreparation: {
     name: 'Training Preparation',

@@ -9,7 +9,7 @@ let items = {
     description: 'A basic sword, weak, but effective. Never misses.',
     flavour: 'Some say that even a simple weapon can slice arrows, in the right hands.',
     abilities: [
-      Abilities.getAbility('Chop')
+      Abilities.getAbility('Whack')
     ]
   }
 };

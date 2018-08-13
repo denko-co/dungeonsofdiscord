@@ -16,18 +16,19 @@ bot.on('messageReactionAdd', async function (messageReaction, user) {
   let channelId = messageReaction.message.channel.id;
   if (gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];
-    if (messageReaction.message.id === gameManager.messageId && !user.bot) {
+    if (!user.bot && messageReaction.message.id === gameManager.messageId) {
       // console.log(messageReaction.emoji);
       await gameManager.handleReaction(messageReaction, user);
     }
   }
 });
 
-bot.on('message', async function (message) {
+bot.on('message', async function (message, user) {
   let channelId = message.channel.id;
   if (!message.author.bot && gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];
-    await gameManager.send(gameManager.messageId, true);
-    console.log(gameManager.messageId);
+    if (!user.bot && message.charAt(0) === '!') { // Swap this out for prefix later
+      await gameManager.handleMessage(message, user);
+    }
   }
 });

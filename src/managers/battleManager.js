@@ -6,6 +6,9 @@ module.exports = class BattleManager {
     this.gamemanager = gamemanager;
     this.encounter = encounter;
     this.playerInFocus = null;
+    this.actionsForPlayer = null;
+    this.selectedAction = null;
+    this.state = null;
     this.queue = [];
     this.battlefield = gamemanager.players.reverse().concat(encounter.positions);
     this.turn = 1;
@@ -15,11 +18,12 @@ module.exports = class BattleManager {
     await this.send(`*${Util.getBattleReadyText()}*`);
     await this.send(Util.getVsText(this.encounter.name));
     await this.send(`***${Util.getBattleStartText()}***`);
-    await this.performTurn();
+    let turnResult = await this.performTurn();
+    return turnResult;
   }
 
-  async performTurn (messageReaction) {
-    if (!messageReaction) {
+  async performTurn (reactionInfo) {
+    if (!reactionInfo) {
       let effective = Util.getEffectiveCharacters(this.battlefield);
       // performTurn called not off an action, perform a game turn tick
 
@@ -36,15 +40,85 @@ module.exports = class BattleManager {
       // Now we have a queue with something in it, we can pop and evaluate
 
       let character = this.queue.shift();
+      await this.send((character.owner ? Util.getMention(character.owner) : character.name) + ', you\'re up!');
       if (character.owner) {
         // Hand to the player to do an action, give them options.
+        let validActions = this.getValidActions(character);
+        console.log(validActions);
+        this.playerInFocus = character;
+        this.actionsForPlayer = validActions;
+        this.state = 'SELECT_ABILITY';
+
+        let questionToAsk = await this.send('What would you like to do?', true);
+        Util.addReactions(questionToAsk, this.getIconsForActions(validActions));
+        return 'BATTLING';
       } else {
         // NPC, evaluate and tick (no interrupts).
         await character.logic.performTurn(this, character); // I don't know anyone I am
+        // Let's go again!
+        let result = await this.performTurn();
+        return result;
       }
     } else {
-      // Player has performed an action, check if it's good to go.
+      if (this.playerInFocus && reactionInfo.user.id === this.playerInFocus.owner) {
+        // Player has performed an action, check if it's good to go.
+        let reactions = reactionInfo.message.reactions;
+        switch (this.state) {
+          case 'SELECT_ABILITY':
+            if (reactionInfo.react !== '✅') return 'BATTLING'; // Nothing to do!
+            // Let's confirm their actions ...
+            let options = this.getSelectedOptions(reactions, this.getIconsForActions(this.actionsForPlayer, true), reactionInfo.user.id);
+            if (options.length === 0) {
+              // No option provided!
+              this.send('Please select an ability to cast! To pass, press 🤷');
+              reactionInfo.messageReaction.remove(reactionInfo.user);
+            } else if (options.length > 1) {
+              // Too many options provided!
+              this.send('Too many choices! Only one pls!');
+              reactionInfo.messageReaction.remove(reactionInfo.user);
+            } else {
+              // Option selected, slam it
+              let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
+              this.selectedAction = chosen;
+              let targets = this.getTargetList(chosen[1]);
+              let questionToAsk = await this.send('Please choose targets from the following. The maximum number of targets is ' + chosen[0].targets.number + '.\n' + targets[0], true);
+              Util.addReactions(questionToAsk, targets[1]);
+              this.state = 'SELECT_TARGET';
+            }
+            return 'BATTLING';
+          case 'SELECT_TARGET':
+            if (reactionInfo.react === '🚫') {
+              // Bounce back to target select
+              let questionToAsk = await this.send('Targetting cancelled. What would you like to do?', true);
+              Util.addReactions(questionToAsk, this.getIconsForActions(this.actionsForPlayer));
+              this.state = 'SELECT_ABILITY';
+              return 'BATTLING';
+            } else if (reactionInfo.react === '✅') {
+              // Let's go get the targets...
+              let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction[1], true)[1], reactionInfo.user.id);
+              console.log('Targets are...');
+              console.log(targets);
+              return 'BATTLING';
+            } else {
+              return 'BATTLING'; // Nothing to do!
+            }
+        }
+      }
     }
+  }
+
+  getSelectedOptions (reactions, validIcons, userId) {
+    let options = [];
+    reactions.forEach((react, icon) => {
+      if (validIcons.includes(icon)) {
+        react.users.forEach(user => {
+          if (user.id === userId) {
+            options.push(icon);
+          }
+        });
+      }
+    });
+    return options;
   }
 
   prepareQueue (players, enemies) {
@@ -75,22 +149,55 @@ module.exports = class BattleManager {
     return queue;
   }
 
+  getAbilityByIcon (actionList, icon) {
+    return actionList.find(array => {
+      return array[0].icon === icon;
+    });
+  }
+
+  getIconsForActions (actionList, onlyIcons) {
+    let icons = actionList.map(actionItem => {
+      return actionItem[0].icon;
+    });
+    if (!onlyIcons) {
+      icons.push('✅');
+    }
+    return icons;
+  }
+
+  getTargetList (targetList, onlyIcons) {
+    let numbers = Util.getNumbersAsEmoji();
+    let targetString = '';
+    for (let i = 0; i < targetList.length; i++) {
+      targetString += numbers[i] + ' - ' + targetList[i].name + '\n';
+    }
+    let targetIcons = numbers.slice(0, targetList.length);
+    if (!onlyIcons) {
+      targetIcons.push('🚫');
+      targetIcons.push('✅');
+    }
+    return [targetString, targetIcons];
+  }
+
   getValidActions (char) {
     let actionList = [];
-    for (let item in char.items) {
-      for (let itemabil in item.abilities) {
+    for (let i = 0; i < char.items.length; i++) {
+      let item = char.items[i];
+      for (let j = 0; j < item.abilities.length; j++) {
+        let itemabil = item.abilities[j];
         // Check if the ability can target something. If it's not null, add it to the pool
         let targets = this.getValidTargets(char, itemabil);
         if (targets && targets.length !== 0) {
-          actionList.push(itemabil, targets);
+          actionList.push([itemabil, targets]);
         }
       }
     }
-    for (let charabil in char.abilities) {
+    for (let i = 0; i < char.abilities.length; i++) {
+      let charabil = char.abilities[i];
       // As before
       let targets = this.getValidTargets(char, charabil);
       if (targets !== null) {
-        actionList.push(charabil, targets);
+        actionList.push([charabil, targets]);
       }
     }
     return actionList;
@@ -119,7 +226,7 @@ module.exports = class BattleManager {
           });
         }
       }
-      return targets.length === 0 ? null : targets;
+      return targets;
     }
   }
 
@@ -137,11 +244,11 @@ module.exports = class BattleManager {
 
   async useAbility (ability, caster, targets) {
     let effect = _.clone(ability.effect); // Take copy
+    this.whoApplied = caster;
+    this.turnApplied = this.turn;
     if (ability.targets.number === 0) {
-      // Battlefield effect
-      console.log(this.battlefield);
+      // Battlefield effect, oBA handles the placement (battleManager still does cleanup) ?
       await effect.onBattlefieldApply(this, caster, targets);
-      console.log(this.battlefield);
     }
   }
 

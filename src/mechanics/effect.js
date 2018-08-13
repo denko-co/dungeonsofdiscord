@@ -17,6 +17,5 @@ module.exports = class Effect {
         this[bind] = bindings[bind];
       }
     }
-    this.state = null;
   }
 };

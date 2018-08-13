@@ -20,8 +20,9 @@ let creatures = {
     ],
     logic: {
       async performTurn (battleManager, me) {
-        await battleManager.send('Here we go! Let\'s summon something!');
+        await battleManager.send('"Hello, welcome to the dungeon! Before you run around adventuring, first you\'ve got to learn the ropes!" *ahem*');
         await battleManager.useAbility(me.abilities[0], me, [3]);
+        await battleManager.send('"You wouldn\'t believe how long that took to get working. Alright, now, use your sword to hit this dummy!"');
       }
     }
   }
