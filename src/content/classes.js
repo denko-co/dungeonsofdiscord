@@ -10,8 +10,8 @@ let classes = {
     name: 'Matyr',
     description: 'Get it, they give their life for others?',
     hp: 15,
-    items: [
-      Items.getItem('Training Sword')
+    itemNames: [
+      'Training Sword'
     ]
   }
 };
@@ -31,7 +31,15 @@ exports.getClass = function (name, playerId) {
       abilities.push(Abilities.getAbility(classDetails.abilityNames[i]));
     }
   }
-  let classToAdd = new Character(classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, classDetails.items, classDetails.effects);
+
+  let items = [];
+  if (classDetails.itemNames) {
+    for (let i = 0; i < classDetails.itemNames.length; i++) {
+      items.push(Items.getItem(classDetails.itemNames[i]));
+    }
+  }
+
+  let classToAdd = new Character(classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, items, classDetails.effects);
   classToAdd.owner = playerId;
   return classToAdd;
 };

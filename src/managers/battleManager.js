@@ -10,6 +10,8 @@ module.exports = class BattleManager {
     this.selectedAction = null;
     this.state = null;
     this.queue = [];
+    this.graveyard = [];
+    this.fled = [];
     this.battlefield = gamemanager.players.reverse().concat(encounter.positions);
     this.turn = 1;
   }
@@ -44,7 +46,8 @@ module.exports = class BattleManager {
       if (character.owner) {
         // Hand to the player to do an action, give them options.
         let validActions = this.getValidActions(character);
-        console.log(validActions);
+        console.log('Battlefield on your turn is...');
+        console.log(this.battlefield);
         this.playerInFocus = character;
         this.actionsForPlayer = validActions;
         this.state = 'SELECT_ABILITY';
@@ -81,7 +84,7 @@ module.exports = class BattleManager {
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
               this.selectedAction = chosen;
               let targets = this.getTargetList(chosen[1]);
-              let questionToAsk = await this.send('Please choose targets from the following. The maximum number of targets is ' + chosen[0].targets.number + '.\n' + targets[0], true);
+              let questionToAsk = await this.send('Please choose ' + chosen[0].targets.number + ' target' + (chosen[0].targets.number === 1 ? '' : 's') + ' from the following.\n' + targets[0], true);
               Util.addReactions(questionToAsk, targets[1]);
               this.state = 'SELECT_TARGET';
             }
@@ -89,15 +92,30 @@ module.exports = class BattleManager {
           case 'SELECT_TARGET':
             if (reactionInfo.react === '🚫') {
               // Bounce back to target select
-              let questionToAsk = await this.send('Targetting cancelled. What would you like to do?', true);
+              let questionToAsk = await this.send('Targeting cancelled. What would you like to do?', true);
               Util.addReactions(questionToAsk, this.getIconsForActions(this.actionsForPlayer));
               this.state = 'SELECT_ABILITY';
               return 'BATTLING';
             } else if (reactionInfo.react === '✅') {
               // Let's go get the targets...
               let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction[1], true)[1], reactionInfo.user.id);
-              console.log('Targets are...');
-              console.log(targets);
+              targets = Util.getEmojiNumbersAsInts(targets);
+              if (targets.length !== this.selectedAction[0].targets.number) {
+                // Not enough / too many targets
+                this.send('Pls select the correct number of targets.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else {
+                // Gogogogogo!
+                let targetChars = targets.map(pos => {
+                  return this.selectedAction[1][pos - 1];
+                });
+
+                await this.useAbility(this.selectedAction[0], this.playerInFocus, targetChars);
+
+                // Turn over, move onto next person.
+                let result = await this.performTurn();
+                return result;
+              }
               return 'BATTLING';
             } else {
               return 'BATTLING'; // Nothing to do!
@@ -173,8 +191,7 @@ module.exports = class BattleManager {
     }
     let targetIcons = numbers.slice(0, targetList.length);
     if (!onlyIcons) {
-      targetIcons.push('🚫');
-      targetIcons.push('✅');
+      targetIcons.push('✅', '🚫');
     }
     return [targetString, targetIcons];
   }
@@ -242,13 +259,38 @@ module.exports = class BattleManager {
     throw new Error('Character not found! Uh oh!');
   }
 
+  removeFromBattle (char, reason) {
+    let location = this.getCharacterLocation(char);
+    this.battlefield[location[0]].splice(location[1], 1);
+    switch (reason) {
+      case 'DEAD':
+        this.graveyard.push(char);
+        break;
+      case 'FLED':
+        this.fled.push(char);
+        break;
+    }
+  }
+
   async useAbility (ability, caster, targets) {
-    let effect = _.clone(ability.effect); // Take copy
-    this.whoApplied = caster;
-    this.turnApplied = this.turn;
+    let effect = Util.clone(ability.effect); // Take copy
+    effect.whoApplied = caster;
+    effect.turnApplied = this.turn;
     if (ability.targets.number === 0) {
       // Battlefield effect, oBA handles the placement (battleManager still does cleanup) ?
       await effect.onBattlefieldApply(this, caster, targets);
+    } else {
+      // cast skill, use on each target
+      for (let i = 0; i < targets.length; i++) {
+        let target = targets[i];
+        await effect.onApply(this, caster, target);
+        if (!target.alive) {
+          await this.send(target.name + ' has been slain!');
+          this.removeFromBattle(target, 'DEAD');
+        } else {
+          target.effects.push(effect);
+        }
+      }
     }
   }
 

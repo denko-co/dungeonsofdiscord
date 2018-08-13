@@ -5,6 +5,7 @@ module.exports = class Character {
     this.description = description;
     this.type = type;
     this.hp = hp;
+    this.currenthp = hp;
 
     this.speed = speed || 'NORMAL';
 
@@ -18,10 +19,15 @@ module.exports = class Character {
     this.effects = effects || [];
 
     this.owner = null;
+
+    this.alive = true;
   }
 
   dealDamage (amount) {
-    this.hp -= amount;
+    this.currenthp -= amount;
     // Handle death and on damage effects
+    if (this.currenthp <= 0) {
+      this.alive = false;
+    }
   }
 };

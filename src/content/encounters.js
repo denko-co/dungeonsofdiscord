@@ -10,7 +10,7 @@ let encounters = {
     description: 'A short tutorial. Everyone\'s gotta start somewhere, right?',
     positions: {
       position3: [
-        Creatures.getCreature('An Old Man')
+        'Old Man'
       ]
     }
   }
@@ -21,6 +21,15 @@ exports.getEncounter = function (name) {
   if (!encounterDetails) {
     throw new Error(`Encounter with name ${name} not found!`);
   }
+
+  for (let pos in encounterDetails.positions) {
+    for (let i = 0; i < encounterDetails.positions[pos].length; i++) {
+      encounterDetails.positions[pos][i] = Creatures.getCreature(encounterDetails.positions[pos][i]);
+    }
+  }
+
+  // Put rewards here when we decide how to do drops
+
   let encounterToAdd = new Encounter(encounterDetails.name, encounterDetails.description, encounterDetails.positions, encounterDetails.effects, encounterDetails.rewards);
   return encounterToAdd;
 };

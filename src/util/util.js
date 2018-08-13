@@ -71,7 +71,8 @@ exports.addReactions = function (message, reactionsArray) {
 };
 
 exports.getVsText = function (vs) {
-  return 'Our heroes!\n**vs**\n' + vs + '!';
+  let lbreak = '------------\n';
+  return lbreak + 'Our heroes!\n**vs**\n' + vs + '!\n' + lbreak;
 };
 
 // Now THIS is a good meme
@@ -113,6 +114,22 @@ exports.getEffectiveCharacters = function (arrayOfArrays) {
   return {players: playersArray, enemies: enemiesArray};
 };
 
-exports.getNumbersAsEmoji = function () {
+const getNumbersAsEmoji = function () {
   return ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣'];
+};
+exports.getNumbersAsEmoji = getNumbersAsEmoji;
+
+exports.getEmojiNumbersAsInts = function (array) {
+  let mappings = this.getNumbersAsEmoji();
+  let result = [];
+  // This should use map :v)
+  for (let i = 0; i < array.length; i++) {
+    result.push(mappings.indexOf(array[i]) + 1);
+  }
+  return result;
+};
+
+exports.clone = function (orig) {
+  // Blame https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
+  return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
 };

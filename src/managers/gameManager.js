@@ -79,7 +79,7 @@ module.exports = class GameManager {
   addPlayer (userId) {
     for (let i = 0; i < this.players.length; i++) {
       if (this.players[i].length === 0) {
-        this.players[i].push(Classes.getClass('Matyr', userId));
+        this.players[i].push(Classes.getClass('Matyr', userId)); // Dynamic so will use correct copies
       }
       return;
     }

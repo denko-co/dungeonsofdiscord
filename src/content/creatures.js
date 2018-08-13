@@ -8,10 +8,11 @@ let creatures = {
   trainingDummy: {
     name: 'Training Dummy',
     description: 'Training, for dummies.',
-    hp: 1
+    hp: 9001,
+    speed: 'SLOW'
   },
-  anOldMan: {
-    name: 'An Old Man',
+  oldMan: {
+    name: 'Old Man',
     description: 'Wise beyond his... uh, wise for his years.',
     hp: 10,
     speed: 'FAST',
