@@ -30,4 +30,19 @@ module.exports = class Character {
       this.alive = false;
     }
   }
+
+  getCharacterDetails (battleManager) {
+    let text = '*Current hp:* ';
+    text += this.currenthp + '/' + this.hp + '\n';
+    text += '*Abilities:* ' + (this.abilities.length === 0 ? '-' : '') + '\n';
+    this.abilities.forEach(ability => {
+      text += ability.getAbilityDetails() + '\n';
+    });
+    text += '*Items:* ' + (this.items.length === 0 ? '-' : '') + '\n';
+    this.items.forEach(item => {
+      text += item.getItemDetails() + '\n';
+    });
+
+    return text;
+  }
 };

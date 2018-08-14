@@ -8,4 +8,19 @@ module.exports = class Item {
     this.abilities = abilities || [];
     this.effects = effects || [];
   }
+
+  getItemDetails () {
+    let text = '**' + this.name + '**' + ' ' + this.description + ' ';
+    let info = '';
+    if (this.uses) info += this.currentUses + '/' + this.uses + 'uses';
+    text += ' ' + (info === '' ? '' : '(' + info + ')') + '\n*' + this.name + ' abilities:* ';
+
+    text += this.abilities.length === 0 ? '-' : '\n';
+
+    this.abilities.forEach(ability => {
+      text += ability.getAbilityDetails() + '\n';
+    });
+
+    return text;
+  }
 };

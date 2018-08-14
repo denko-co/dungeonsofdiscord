@@ -9,4 +9,13 @@ module.exports = class Ability {
     this.range = range;
     this.icon = icon;
   }
+
+  getAbilityDetails () {
+    let text = this.icon + ' **' + this.name + '**' + ' ' + this.description + ' ';
+    let info = '';
+    if (this.cooldown) info += this.cooldown + ' cd';
+    if (this.targets) info += (info === '' ? '' : ', ') + this.targets.number + ' target' + (this.targets.number === 1 ? '' : 's');
+    if (this.range) info += (info === '' ? '' : ', ') + this.range + ' range';
+    return text + ' ' + (info === '' ? '' : '(' + info + ')');
+  }
 };

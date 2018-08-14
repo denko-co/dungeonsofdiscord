@@ -71,8 +71,19 @@ module.exports = class GameManager {
     }
   }
 
-  async handleMessage (message, user) {
-    let command = message.content.substring(1);
+  async handleMessage (message) {
+    let command = message.content.substring(1).toLowerCase();
+    if (this.currentBattle && (command === 'battle' || command === 'battlefield')) {
+      await this.send(this.currentBattle.getBattlefield());
+    } else if (command === 'me') {
+      this.players.forEach(arr => {
+        arr.forEach(char => {
+          if (char.owner === message.author.id) {
+            this.send(char.getCharacterDetails(this.currentBattle));
+          }
+        });
+      });
+    }
     console.log(command);
   }
 

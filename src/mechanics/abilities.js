@@ -8,7 +8,7 @@ const Util = require('../util/util.js');
 let abilities = {
   whack: {
     name: 'Whack',
-    description: 'Deal 3-5 damage to 1 target.',
+    description: 'Deal 3-5 damage.',
     flavour: 'Smack that!',
     effect: Effects.getEffect('Flat Damage', {
       getDamage: function () {

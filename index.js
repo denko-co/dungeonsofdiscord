@@ -23,12 +23,12 @@ bot.on('messageReactionAdd', async function (messageReaction, user) {
   }
 });
 
-bot.on('message', async function (message, user) {
+bot.on('message', async function (message) {
   let channelId = message.channel.id;
   if (!message.author.bot && gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];
-    if (!user.bot && message.charAt(0) === '!') { // Swap this out for prefix later
-      await gameManager.handleMessage(message, user);
+    if (message.content.charAt(0) === '!') { // Swap this out for prefix later
+      await gameManager.handleMessage(message);
     }
   }
 });

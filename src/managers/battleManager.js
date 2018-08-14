@@ -13,7 +13,7 @@ module.exports = class BattleManager {
     this.graveyard = [];
     this.fled = [];
     this.battlefield = gamemanager.players.reverse().concat(encounter.positions);
-    this.turn = 1;
+    this.turn = 0;
   }
 
   async initialise () {
@@ -37,6 +37,7 @@ module.exports = class BattleManager {
 
       if (this.queue.length === 0) {
         this.queue = this.prepareQueue(effective.players, effective.enemies);
+        this.turn++;
       }
 
       // Now we have a queue with something in it, we can pop and evaluate
@@ -79,6 +80,11 @@ module.exports = class BattleManager {
               // Too many options provided!
               this.send('Too many choices! Only one pls!');
               reactionInfo.messageReaction.remove(reactionInfo.user);
+            } else if (options[0] === '🤷') {
+              // Player is passing, do nothing
+              this.send('Passing? Are you sure? Alright then.');
+              let result = await this.performTurn();
+              return result;
             } else {
               // Option selected, slam it
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
@@ -177,6 +183,7 @@ module.exports = class BattleManager {
     let icons = actionList.map(actionItem => {
       return actionItem[0].icon;
     });
+    icons.push('🤷');
     if (!onlyIcons) {
       icons.push('✅');
     }
@@ -292,6 +299,35 @@ module.exports = class BattleManager {
         }
       }
     }
+  }
+
+  getBattlefield () {
+    let battle = this.battlefield;
+    let dead = this.graveyard;
+    let fled = this.fled;
+    let text = '';
+    let no = '-';
+    for (let i = 0; i < battle.length; i++) {
+      text += '*Position ' + (i + 1) + ':* ';
+      if (battle[i].length === 0) text += no;
+      for (let j = 0; j < battle[i].length; j++) {
+        let char = battle[i][j];
+        text += (j === 0 ? '' : ', ') + (char.owner ? Util.getMention(char.owner) : char.name) + ' @ ' + char.currenthp + '/' + char.hp + ' hp';
+      }
+      text += '\n';
+    }
+    [dead, fled].forEach(arr => {
+      text += (arr === dead ? '*Graveyard:* ' : '*Fled:* ');
+      if (arr.length === 0) text += no;
+      else {
+        let people = arr.map(char => {
+          return (char.owner ? Util.getMention(char.owner) : char.name);
+        });
+        text += Util.capitalise(Util.formattedList(Util.reduceList(people)));
+      }
+      text += '\n';
+    });
+    return text;
   }
 
   async send (string, saveId) {
