@@ -36,7 +36,10 @@ module.exports = class Character {
   iterateEffects (abilityType, battleManager, getChance) {
     let currentChance = 1;
     let abilitiesTriggered = [];
-    let battleEffects = battleManager ? battleManager.effects : [];
+    let battleEffects = [];
+    if (battleManager) {
+      battleEffects = battleManager.battlefieldEffects[battleManager.getCharacterLocation(this).arrayPosition];
+    }
     let effectsToCheck = this.item.effects.concat(this.effects).concat(battleEffects);
     let functionName = 'on' + Util.titleCase(abilityType) + (getChance ? 'Attempt' : '');
 

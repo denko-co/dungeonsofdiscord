@@ -14,6 +14,7 @@ module.exports = class BattleManager {
     this.graveyard = [];
     this.fled = [];
     this.battlefield = gamemanager.players.reverse().concat(encounter.positions);
+    this.battlefieldEffects = encounter.effects;
     this.turn = 0;
   }
 
@@ -246,7 +247,7 @@ module.exports = class BattleManager {
     if (!onlyIcons) {
       icons.push('✅', '🚫');
     }
-    return {msg: msg, icons: icons};
+    return {msg: msg, icons: icons, chance: {left: moveLeftDetails.chance, right: moveRightDetails.chance}};
   }
 
   getValidActions (char) {

@@ -7,7 +7,7 @@ module.exports = class Encounter {
     this.positions.push(positions.position1 || []);
     this.positions.push(positions.position2 || []);
     this.positions.push(positions.position3 || []);
-    this.effects = effects || [];
+    this.effects = effects || [[], [], [], [], [], []];
     this.rewards = rewards || [];
   }
 };
