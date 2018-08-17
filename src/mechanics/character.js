@@ -1,3 +1,5 @@
+const Util = require('../util/util.js');
+
 module.exports = class Character {
   // constructor for characters (players, enemies)
   constructor (name, description, type, hp, speed, logic, abilities, items, effects) {
@@ -29,6 +31,28 @@ module.exports = class Character {
     if (this.currenthp <= 0) {
       this.alive = false;
     }
+  }
+
+  iterateEffects (abilityType, battleManager, getChance) {
+    let currentChance = 1;
+    let abilitiesTriggered = [];
+    let battleEffects = battleManager ? battleManager.effects : [];
+    let effectsToCheck = this.item.effects.concat(this.effects).concat(battleEffects);
+    let functionName = 'on' + Util.titleCase(abilityType) + (getChance ? 'Attempt' : '');
+
+    effectsToCheck.forEach(itemEffect => {
+      if (itemEffect[functionName]) {
+        let result = itemEffect[functionName](this, battleManager);
+        if (getChance) currentChance *= result;
+        abilitiesTriggered.push(itemEffect.name);
+      }
+    });
+
+    // If not a getChance call then currentChance will be 1, because it already happened, ya feel?
+    return {
+      abilitiesTriggered: abilitiesTriggered,
+      chance: currentChance
+    };
   }
 
   getCharacterDetails (battleManager) {

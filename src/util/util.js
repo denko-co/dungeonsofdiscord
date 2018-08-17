@@ -39,10 +39,14 @@ const formattedList = function (array) {
 exports.formattedList = formattedList;
 
 exports.mentionList = function (userIdArray) {
-  const mentionArray = userIdArray.map(userId => {
-    return getMention(userId);
-  });
+  const mentionArray = userIdArray.map(userId => getMention(userId));
   return formattedList(mentionArray);
+};
+
+exports.titleCase = function (string, seperator) {
+  let result = string.split('_');
+  let upperResult = result.map(string => this.capitalise(string.toLowerCase()));
+  return upperResult.join(seperator || ''); // Thanks eslint!
 };
 
 exports.reduceList = function (list) {
@@ -54,6 +58,8 @@ exports.reduceList = function (list) {
       finalCounts[element] = 1;
     }
   });
+
+  // This should use map :v)
   let resultList = [];
   for (let ele in finalCounts) {
     let result = finalCounts[ele] > 1 ? finalCounts[ele] + ' ' + pluralize(ele) : getIndefiniteArticle(ele) + ' ' + ele;
@@ -121,12 +127,7 @@ exports.getNumbersAsEmoji = getNumbersAsEmoji;
 
 exports.getEmojiNumbersAsInts = function (array) {
   let mappings = this.getNumbersAsEmoji();
-  let result = [];
-  // This should use map :v)
-  for (let i = 0; i < array.length; i++) {
-    result.push(mappings.indexOf(array[i]) + 1);
-  }
-  return result;
+  return array.map(ele => mappings.indexOf(ele) + 1);
 };
 
 exports.clone = function (orig) {

@@ -1,4 +1,5 @@
 const Util = require('../util/util.js');
+const Abilities = require('../mechanics/abilities.js');
 const _ = require('underscore');
 
 module.exports = class BattleManager {
@@ -89,9 +90,9 @@ module.exports = class BattleManager {
               // Option selected, slam it
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
               this.selectedAction = chosen;
-              let targets = this.getTargetList(chosen[1]);
-              let questionToAsk = await this.send('Please choose ' + chosen[0].targets.number + ' target' + (chosen[0].targets.number === 1 ? '' : 's') + ' from the following.\n' + targets[0], true);
-              Util.addReactions(questionToAsk, targets[1]);
+              let targets = this.getTargetList(chosen.targets);
+              let questionToAsk = await this.send('Please choose ' + chosen.action.targets.number + ' target' + (chosen.action.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, true);
+              Util.addReactions(questionToAsk, targets.icons);
               this.state = 'SELECT_TARGET';
             }
             return 'BATTLING';
@@ -104,19 +105,21 @@ module.exports = class BattleManager {
               return 'BATTLING';
             } else if (reactionInfo.react === '✅') {
               // Let's go get the targets...
-              let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction[1], true)[1], reactionInfo.user.id);
+              console.log(this.getTargetList(this.selectedAction.targets, true).icons);
+              let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
+              console.log(targets);
               targets = Util.getEmojiNumbersAsInts(targets);
-              if (targets.length !== this.selectedAction[0].targets.number) {
+              if (targets.length !== this.selectedAction.action.targets.number) {
                 // Not enough / too many targets
                 this.send('Pls select the correct number of targets.');
                 reactionInfo.messageReaction.remove(reactionInfo.user);
               } else {
                 // Gogogogogo!
                 let targetChars = targets.map(pos => {
-                  return this.selectedAction[1][pos - 1];
+                  return this.selectedAction.targets[pos - 1];
                 });
 
-                await this.useAbility(this.selectedAction[0], this.playerInFocus, targetChars);
+                await this.useAbility(this.selectedAction.action, this.playerInFocus, targetChars);
 
                 // Turn over, move onto next person.
                 let result = await this.performTurn();
@@ -174,16 +177,15 @@ module.exports = class BattleManager {
   }
 
   getAbilityByIcon (actionList, icon) {
-    return actionList.find(array => {
-      return array[0].icon === icon;
+    return actionList.find(actionItem => {
+      return actionItem.action.icon === icon;
     });
   }
 
   getIconsForActions (actionList, onlyIcons) {
     let icons = actionList.map(actionItem => {
-      return actionItem[0].icon;
+      return actionItem.action.icon;
     });
-    icons.push('🤷');
     if (!onlyIcons) {
       icons.push('✅');
     }
@@ -200,30 +202,77 @@ module.exports = class BattleManager {
     if (!onlyIcons) {
       targetIcons.push('✅', '🚫');
     }
-    return [targetString, targetIcons];
+    return {msg: targetString, icons: targetIcons};
+  }
+
+  getMoveActions (char, onlyIcons) {
+    let position = this.getCharacterLocation(char).arrayPosition;
+    let msg = '';
+    let icons = [];
+    // Check if able to move
+    let moveLeftDetails = char.iterateEffects('MOVE_BACKWARD', this, true);
+    _.extend(moveLeftDetails, {
+      text: 'left',
+      position: 0,
+      direction: 'back',
+      icon: '⬅️'
+    });
+    let moveRightDetails = char.iterateEffects('MOVE_FORWARD', this, true);
+    _.extend(moveRightDetails, {
+      text: 'right',
+      position: 5,
+      direction: 'forward',
+      icon: '➡️'
+    });
+
+    // Build message response
+    [moveLeftDetails, moveRightDetails].forEach(direction => {
+      if (position === direction.position) {
+        // Can't move further
+        msg += `You are as far ${direction.direction} as possible, and can't move further to the ${direction.text}.`;
+        direction.chance = 0;
+      } else {
+        if (direction.chance === 0) {
+          msg += `Some effects have been applied and have reduced your chance to move ${direction.text} to 0%`;
+        } else {
+          msg += `Chance to move ${direction.text}: ${direction.chance * 100}%`;
+        }
+      }
+      msg += '\n';
+      if (direction.chance !== 0) {
+        icons.push(direction.icon);
+      }
+    });
+    if (!onlyIcons) {
+      icons.push('✅', '🚫');
+    }
+    return {msg: msg, icons: icons};
   }
 
   getValidActions (char) {
     let actionList = [];
-    for (let i = 0; i < char.items.length; i++) {
-      let item = char.items[i];
-      for (let j = 0; j < item.abilities.length; j++) {
-        let itemabil = item.abilities[j];
-        // Check if the ability can target something. If it's not null, add it to the pool
-        let targets = this.getValidTargets(char, itemabil);
-        if (targets && targets.length !== 0) {
-          actionList.push([itemabil, targets]);
-        }
+    let abilitiesToCheck = char.abilities;
+
+    char.items.forEach(item => {
+      abilitiesToCheck = abilitiesToCheck.concat(item.abilities);
+    });
+
+    abilitiesToCheck.forEach(ability => {
+      // Check if the ability can target something. If it's not null, add it to the pool
+      let targets = this.getValidTargets(char, ability);
+      if (targets && targets.length !== 0) {
+        actionList.push({action: ability, targets: targets});
       }
+    });
+
+    // Can always move (might be blocked by effects but in premise)
+    actionList.push({action: Abilities.getAbility('Move'), targets: null});
+    // Can only run away if in position 1 (and even then...)
+    if (this.getCharacterLocation(char).arrayPosition === 0) {
+      actionList.push({action: Abilities.getAbility('Flee'), targets: null});
     }
-    for (let i = 0; i < char.abilities.length; i++) {
-      let charabil = char.abilities[i];
-      // As before
-      let targets = this.getValidTargets(char, charabil);
-      if (targets !== null) {
-        actionList.push([charabil, targets]);
-      }
-    }
+    // Can always pass
+    actionList.push({action: Abilities.getAbility('Pass'), targets: null});
     return actionList;
   }
 
@@ -236,7 +285,7 @@ module.exports = class BattleManager {
     } else {
       let targets = [];
       // look for people IN RANGE to target
-      let position = this.getCharacterLocation(char)[0];
+      let position = this.getCharacterLocation(char).arrayPosition;
       for (let i = position - ability.range; i <= position + ability.range; i++) {
         if (i >= 0 && i < this.battlefield.length) {
           // range is on battlefield, collect chars
@@ -259,7 +308,7 @@ module.exports = class BattleManager {
       for (let j = 0; j < this.battlefield[i].length; j++) {
         // 'Member nested for loops? There's probably a more js way of doing this ...
         if (this.battlefield[i][j] === char) {
-          return [i, j];
+          return {arrayPosition: i, arraySubposition: j};
         }
       }
     }
@@ -268,7 +317,7 @@ module.exports = class BattleManager {
 
   removeFromBattle (char, reason) {
     let location = this.getCharacterLocation(char);
-    this.battlefield[location[0]].splice(location[1], 1);
+    this.battlefield[location.arrayPosition].splice(location.arraySubposition, 1);
     switch (reason) {
       case 'DEAD':
         this.graveyard.push(char);

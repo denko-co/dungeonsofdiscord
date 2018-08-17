@@ -6,10 +6,31 @@ const Util = require('../util/util.js');
 
 // Define all abilities
 let abilities = {
+  // These are special abilities for all players in battle (assuming they can)
+  pass: {
+    name: 'Pass',
+    description: 'Special ability for passing turn',
+    type: ['PASS'],
+    icon: '🤷'
+  },
+  flee: {
+    name: 'Flee',
+    description: 'Special ability for running away',
+    type: ['FLEE'],
+    icon: '🏳️'
+  },
+  move: {
+    name: 'Move',
+    description: 'Special ability for changing positions',
+    type: ['MOVE_FORWARD', 'MOVE_BACKWARD'],
+    icon: '↔'
+  },
+  // Player abilities
   whack: {
     name: 'Whack',
     description: 'Deal 3-5 damage.',
     flavour: 'Smack that!',
+    type: ['DAMAGE'],
     effect: Effects.getEffect('Flat Damage', {
       getDamage: function () {
         return _.random(3, 5);
@@ -23,8 +44,10 @@ let abilities = {
     range: 1,
     icon: '⚔'
   },
+  // Creature abilities
   trainingPreparation: {
     name: 'Training Preparation',
+    type: ['SUMMON'],
     effect: Effects.getEffect('Summon', {
       toSummon: [Creatures.getCreature('Training Dummy')]
     }),
@@ -39,6 +62,6 @@ exports.getAbility = function (name) {
   if (!abilityDetails) {
     throw new Error(`Ability with name ${name} not found!`);
   }
-  let abilityToAdd = new Ability(abilityDetails.name, abilityDetails.description, abilityDetails.flavour, abilityDetails.effect, abilityDetails.cooldown, abilityDetails.targets, abilityDetails.range, abilityDetails.icon);
+  let abilityToAdd = new Ability(abilityDetails.name, abilityDetails.description, abilityDetails.flavour, abilityDetails.type, abilityDetails.effect, abilityDetails.cooldown, abilityDetails.targets, abilityDetails.range, abilityDetails.icon);
   return abilityToAdd;
 };
