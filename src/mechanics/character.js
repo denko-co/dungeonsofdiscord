@@ -100,8 +100,7 @@ module.exports = class Character {
   }
 
   getCharacterDetails (battleManager) {
-    let text = '*Current hp:* ';
-    text += this.currenthp + '/' + this.hp + '\n';
+    let text = '*Details for ' + Util.getDisplayName(this) + '* (' + this.currenthp + '/' + this.hp + ' hp)\n';
     text += '*Abilities:* ' + (this.abilities.length === 0 ? '-' : '') + '\n';
     this.abilities.forEach(ability => {
       text += ability.getAbilityDetails() + '\n';
@@ -115,11 +114,14 @@ module.exports = class Character {
       text += effect.getEffectDetails() + '\n';
     });
     if (battleManager) {
-      let battleEffects = battleManager.battlefieldEffects[battleManager.getCharacterLocation(this).arrayPosition];
-      text += '*Battlefield Effects:* ' + (battleEffects.length === 0 ? '-' : '') + '\n';
-      battleEffects.forEach(bfEffect => {
-        text += bfEffect.getEffectDetails() + '\n';
-      });
+      let location = battleManager.getCharacterLocation(this);
+      if (location) {
+        let battleEffects = battleManager.battlefieldEffects[location.arrayPosition];
+        text += '*Battlefield Effects:* ' + (battleEffects.length === 0 ? '-' : '') + '\n';
+        battleEffects.forEach(bfEffect => {
+          text += bfEffect.getEffectDetails() + '\n';
+        });
+      }
     }
 
     return text;

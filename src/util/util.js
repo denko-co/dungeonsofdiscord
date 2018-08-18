@@ -32,6 +32,7 @@ const getDisplayName = function (char) {
 exports.getDisplayName = getDisplayName;
 
 const getIndefiniteArticle = function (words) {
+  if (words.charAt(0) === '<') return '';
   const vowels = ['a', 'e', 'i', 'o', 'u'];
   return vowels.includes(words.charAt(0).toLowerCase()) ? 'an' : 'a';
 };
@@ -68,7 +69,9 @@ exports.reduceList = function (list) {
   // This should use map :v)
   let resultList = [];
   for (let ele in finalCounts) {
-    let result = finalCounts[ele] > 1 ? finalCounts[ele] + ' ' + pluralize(ele) : getIndefiniteArticle(ele) + ' ' + ele;
+    let indef = getIndefiniteArticle(ele);
+    let indefString = indef + (indef ? ' ' : '');
+    let result = finalCounts[ele] > 1 ? finalCounts[ele] + ' ' + pluralize(ele) : indefString + ele;
     resultList.push(result);
   }
   return resultList;

@@ -2,5 +2,6 @@
   "welcome" : "Hi, and welcome to ***DUNGEONS OF DISCORD***. Press :raising_hand: to join, and :white_check_mark: to start.",
   "tooSmall" : "You can't send nobody on a quest! I don't count!",
   "tooLarge" : "Too many people! I can't count higher than 3!",
+  "notOnQuest" : "You can't start a quest if you're not on it! Unless you're a king or queen or something.",
   "letsRock" : ", welcome! Ready to rock? Yeah? Alright, let's do it!"
 }

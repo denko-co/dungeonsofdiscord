@@ -13,7 +13,9 @@ module.exports = class BattleManager {
     this.queue = [];
     this.graveyard = [];
     this.fled = [];
-    this.battlefield = gamemanager.players.reverse().concat(encounter.positions);
+    let playerCopy = gamemanager.players.map(arr => arr.slice());
+    let enemyCopy = encounter.positions.map(arr => arr.slice());
+    this.battlefield = playerCopy.reverse().concat(enemyCopy);
     this.battlefieldEffects = encounter.effects;
     this.turn = 0;
   }
@@ -199,6 +201,8 @@ module.exports = class BattleManager {
               return 'BATTLING'; // Nothing to do!
             }
         }
+      } else {
+        return 'BATTLING'; // Even less to do!
       }
     }
   }
@@ -403,7 +407,8 @@ module.exports = class BattleManager {
         }
       }
     }
-    throw new Error('Character not found! Uh oh!');
+    // throw new Error('Character not found! Uh oh!');
+    return null;
   }
 
   removeFromBattle (char, reason) {

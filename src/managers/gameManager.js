@@ -11,6 +11,7 @@ module.exports = class GameManager {
     this.messageId = null;
     this.players = [[], [], []];
     this.state = 'READY';
+    this.readied = false;
     this.currentBattle = null;
     this.battleNumber = 1;
   }
@@ -42,7 +43,13 @@ module.exports = class GameManager {
         } else if (ready.users.size >= 4) {
           this.send(tr.tooLarge);
           messageReaction.remove(user);
+        } else if (!ready.users.keyArray().includes(user.id)) {
+          this.send(tr.notOnQuest);
+          messageReaction.remove(user);
         } else {
+          // SYNCHRONISE XD
+          if (this.readied) return;
+          this.readied = true;
           let playersToAddress = [];
           ready.users.forEach((user) => {
             if (!user.bot) {
@@ -91,8 +98,8 @@ module.exports = class GameManager {
     for (let i = 0; i < this.players.length; i++) {
       if (this.players[i].length === 0) {
         this.players[i].push(Classes.getClass('Matyr', userId)); // Dynamic so will use correct copies
+        return;
       }
-      return;
     }
     throw new Error('Too many players have been added!');
   }
