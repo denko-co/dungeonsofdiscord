@@ -70,7 +70,7 @@ module.exports = class Character {
     return false;
   }
 
-  iterateEffects (abilityType, battleManager, getChance) {
+  async iterateEffects (abilityType, battleManager, getChance) {
     let currentChance = 1;
     let effectsTriggered = [];
     let battleEffects = [];
@@ -83,13 +83,14 @@ module.exports = class Character {
     });
     let effectsToCheck = itemEffects.concat(this.effects).concat(battleEffects);
     let functionName = 'on' + Util.titleCase(abilityType) + (getChance ? 'Attempt' : '');
-    effectsToCheck.forEach(effect => {
+    for (let i = 0; i < effectsToCheck.length; i++) {
+      let effect = effectsToCheck[i];
       if (effect[functionName]) {
-        let result = effect[functionName](this, battleManager);
+        let result = await effect[functionName](this, battleManager);
         if (getChance) currentChance *= result;
         effectsTriggered.push(effect.name);
       }
-    });
+    }
 
     // If not a getChance call then currentChance will be 1, because it already happened, ya feel?
     return {

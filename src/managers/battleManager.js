@@ -100,7 +100,7 @@ module.exports = class BattleManager {
               return this.performTurn();
             } else if (options[0] === '🏳') {
               // Player is running away
-              let fleeInfo = this.getFleeChance(this.characterInFocus);
+              let fleeInfo = await this.getFleeChance(this.characterInFocus);
               // To hold chance
               this.selectedAction = fleeInfo;
               if (fleeInfo.chance === 0) {
@@ -114,7 +114,7 @@ module.exports = class BattleManager {
               }
             } else if (options[0] === '↔') {
               // Player is moving!
-              let moveInfo = this.getMoveActions(this.characterInFocus);
+              let moveInfo = await this.getMoveActions(this.characterInFocus);
               // Putting it into selected action, for now
               this.selectedAction = moveInfo;
               if (moveInfo.chance.left === 0 && moveInfo.chance.right === 0) {
@@ -274,9 +274,9 @@ module.exports = class BattleManager {
     return {msg: targetString, icons: targetIcons};
   }
 
-  getFleeChance (char) {
+  async getFleeChance (char) {
     let msg = '';
-    let fleeChance = char.iterateEffects('FLEE', this, true);
+    let fleeChance = await char.iterateEffects('FLEE', this, true);
     if (fleeChance.chance === 0) {
       msg += `Some effects have been applied and have reduced your chance to flee to 0%`;
     } else {
@@ -291,19 +291,19 @@ module.exports = class BattleManager {
     return {msg: msg, chance: fleeChance.chance};
   }
 
-  getMoveActions (char, onlyIcons) {
+  async getMoveActions (char, onlyIcons) {
     let position = this.getCharacterLocation(char).arrayPosition;
     let msg = '';
     let icons = [];
     // Check if able to move
-    let moveLeftDetails = char.iterateEffects('MOVE_BACKWARD', this, true);
+    let moveLeftDetails = await char.iterateEffects('MOVE_BACKWARD', this, true);
     _.extend(moveLeftDetails, {
       text: 'left',
       position: 0,
       direction: 'back',
       icon: '⬅'
     });
-    let moveRightDetails = char.iterateEffects('MOVE_FORWARD', this, true);
+    let moveRightDetails = await char.iterateEffects('MOVE_FORWARD', this, true);
     _.extend(moveRightDetails, {
       text: 'right',
       position: 5,
