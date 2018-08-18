@@ -20,7 +20,13 @@ module.exports = class Item {
     this.abilities.forEach(ability => {
       text += ability.getAbilityDetails() + '\n';
     });
+    if (this.effects.length !== 0) {
+      text += '*' + this.name + 'effects:* \n';
+      this.effects.forEach(effect => {
+        text += effect.getEffectDetails() + '\n';
+      });
+    }
 
-    return text;
+    return text.slice(0, -1);
   }
 };

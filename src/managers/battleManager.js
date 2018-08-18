@@ -6,7 +6,7 @@ module.exports = class BattleManager {
   constructor (gamemanager, encounter) {
     this.gamemanager = gamemanager;
     this.encounter = encounter;
-    this.playerInFocus = null;
+    this.characterInFocus = null;
     this.actionsForPlayer = null;
     this.selectedAction = null;
     this.state = null;
@@ -34,27 +34,37 @@ module.exports = class BattleManager {
         // All players are dead or fled! Oh no!
         this.send('The battle is over! Game over man, game over!');
         return 'EXPLORING';
-      } else if (effective.players.enemies === 0) {
+      } else if (effective.enemies.length === 0) {
         // All enemies are dead or fled! Hooray!
         this.send('The battle is over! You win!');
         return 'EXPLORING';
       }
 
+      // Cleanup all effects for the turn just gone
+      if (this.characterInFocus) {
+        await this.cleanupEffects(this.characterInFocus, effective.players.concat(effective.enemies));
+      }
+
       if (this.queue.length === 0) {
         this.queue = this.prepareQueue(effective.players, effective.enemies);
+
+        // Take this opportunity to cleanup for dead/fled people
+        for (let i = 0; i < this.graveyard.length; i++) {
+          await this.cleanupEffects(this.graveyard[i], effective.players.concat(effective.enemies));
+        }
         this.turn++;
       }
 
       // Now we have a queue with something in it, we can pop and evaluate
 
       let character = this.queue.shift();
+      this.characterInFocus = character;
       await this.send(Util.getDisplayName(character) + ', you\'re up!');
       if (character.owner) {
         // Hand to the player to do an action, give them options.
         let validActions = this.getValidActions(character);
         console.log('Battlefield on your turn is...');
         console.log(this.battlefield);
-        this.playerInFocus = character;
         this.actionsForPlayer = validActions;
         this.state = 'SELECT_ABILITY';
 
@@ -68,7 +78,7 @@ module.exports = class BattleManager {
         return this.performTurn();
       }
     } else {
-      if (this.playerInFocus && reactionInfo.user.id === this.playerInFocus.owner) {
+      if (this.characterInFocus && reactionInfo.user.id === this.characterInFocus.owner) {
         // Player has performed an action, check if it's good to go.
         let reactions = reactionInfo.message.reactions;
         switch (this.state) {
@@ -90,13 +100,13 @@ module.exports = class BattleManager {
               return this.performTurn();
             } else if (options[0] === '🏳') {
               // Player is running away
-              let fleeInfo = this.getFleeChance(this.playerInFocus);
+              let fleeInfo = this.getFleeChance(this.characterInFocus);
               // To hold chance
               this.selectedAction = fleeInfo;
               if (fleeInfo.chance === 0) {
                 // Bounce back to action select
                 await this.send(fleeInfo.msg);
-                return this.cancelAction('As you can\'t move, flee');
+                return this.cancelAction('As you can\'t flee, your retreat');
               } else {
                 let fleeMessage = await this.send(fleeInfo.msg + 'Are you sure you want to run?', true);
                 Util.addReactions(fleeMessage, ['✅', '🚫']);
@@ -104,7 +114,7 @@ module.exports = class BattleManager {
               }
             } else if (options[0] === '↔') {
               // Player is moving!
-              let moveInfo = this.getMoveActions(this.playerInFocus);
+              let moveInfo = this.getMoveActions(this.characterInFocus);
               // Putting it into selected action, for now
               this.selectedAction = moveInfo;
               if (moveInfo.chance.left === 0 && moveInfo.chance.right === 0) {
@@ -144,7 +154,7 @@ module.exports = class BattleManager {
                   return this.selectedAction.targets[pos - 1];
                 });
 
-                await this.useAbility(this.selectedAction.action, this.playerInFocus, targetChars);
+                await this.useAbility(this.selectedAction.action, this.characterInFocus, targetChars);
 
                 // Turn over, move onto next person.
                 return this.performTurn();
@@ -170,7 +180,7 @@ module.exports = class BattleManager {
                 reactionInfo.messageReaction.remove(reactionInfo.user);
               } else {
                 // Attempt a move, do the next turn
-                await this.performMove(this.playerInFocus, directions[0], this.selectedAction.chance);
+                await this.performMove(this.characterInFocus, directions[0], this.selectedAction.chance);
                 return this.performTurn();
               }
               return 'BATTLING';
@@ -183,7 +193,7 @@ module.exports = class BattleManager {
               return this.cancelAction('Retreat');
             } else if (reactionInfo.react === '✅') {
               // Running away!
-              await this.performFlee(this.playerInFocus, this.selectedAction.chance);
+              await this.performFlee(this.characterInFocus, this.selectedAction.chance);
               return this.performTurn();
             } else {
               return 'BATTLING'; // Nothing to do!
@@ -275,7 +285,7 @@ module.exports = class BattleManager {
     if (fleeChance.effectsTriggered.length !== 0) {
       let effectList = fleeChance.effectsTriggered;
       let effectString = Util.formattedList(effectList);
-      msg += `Effects applied: ${effectString}`;
+      msg += `\nEffects applied: *${effectString}*`;
     }
     msg += '\n';
     return {msg: msg, chance: fleeChance.chance};
@@ -316,7 +326,7 @@ module.exports = class BattleManager {
         if (direction.effectsTriggered.length !== 0) {
           let effectList = direction.effectsTriggered;
           let effectString = Util.formattedList(effectList);
-          msg += `Effects applied: ${effectString}`;
+          msg += `\nEffects applied: ${effectString}`;
         }
       }
       msg += '\n';
@@ -449,18 +459,55 @@ module.exports = class BattleManager {
     return 'BATTLING';
   }
 
+  async cleanupEffects (caster, charactersToCleanup) {
+    let characters = charactersToCleanup;
+    if (!characters) {
+      let effectiveChars = Util.getEffectiveCharacters(this.battlefield);
+      characters = effectiveChars.players.concat(effectiveChars.enemies);
+    }
+    for (let i = 0; i < characters.length; i++) {
+      await characters[i].cleanupEffect(caster, this);
+    }
+    for (let i = 0; i < this.battlefieldEffects.length; i++) {
+      for (let j = this.battlefieldEffects[i].length - 1; j >= 0; j--) {
+        // Hmm, this looks familiar ...
+        let effect = this.battlefieldEffects[i][j];
+        if (effect.whoApplied === caster) {
+          if (effect.ticks === effect.currentTicks) {
+            // Expire the effect
+            if (effect.onRemoveBattlefield) {
+              await effect.onRemoveBattlefield(this, caster);
+            }
+            this.battlefieldEffects[i].splice(j, 1);
+          } else {
+            if (effect.onTickBattlefield) {
+              await effect.onTickBattlefield(this, caster);
+            }
+            effect.currentTicks++;
+          }
+        }
+      }
+    }
+  }
+
   async useAbility (ability, caster, targets) {
     let effect = Util.clone(ability.effect); // Take copy
     effect.whoApplied = caster;
-    effect.turnApplied = this.turn;
     if (ability.targets.number === 0) {
-      // Battlefield effect, oBA handles the placement (battleManager still does cleanup) ?
-      await effect.onBattlefieldApply(this, caster, targets);
+      // Battlefield effect, oBA handles the placement (battleManager still does cleanup ? )
+      if (effect.onBattlefieldApply) {
+        await effect.onBattlefieldApply(this, caster, targets);
+      }
+      targets.forEach(target => {
+        this.battlefieldEffects[target].push(effect);
+      });
     } else {
       // cast skill, use on each target
       for (let i = 0; i < targets.length; i++) {
         let target = targets[i];
-        await effect.onApply(this, caster, target);
+        if (effect.onApply) {
+          await effect.onApply(this, caster, target);
+        }
         if (!target.alive) {
           await this.send(Util.getDisplayName(target) + ' has been slain!');
           this.removeFromBattle(target, 'DEAD');
@@ -475,16 +522,23 @@ module.exports = class BattleManager {
     let battle = this.battlefield;
     let dead = this.graveyard;
     let fled = this.fled;
+    let bfEffects = this.battlefieldEffects;
     let text = '';
     let no = '-';
     for (let i = 0; i < battle.length; i++) {
-      text += '*Position ' + (i + 1) + ':* ';
+      text += '***Position ' + (i + 1) + ':*** ';
       if (battle[i].length === 0) text += no;
       for (let j = 0; j < battle[i].length; j++) {
         let char = battle[i][j];
         text += (j === 0 ? '' : ', ') + Util.getDisplayName(char) + ' @ ' + char.currenthp + '/' + char.hp + ' hp';
       }
       text += '\n';
+      if (bfEffects[i].length !== 0) {
+        text += '*Battlefield effects:*\n';
+        bfEffects[i].forEach(effect => {
+          text += effect.getEffectDetails() + '\n';
+        });
+      }
     }
     [dead, fled].forEach(arr => {
       text += (arr === dead ? '*Graveyard:* ' : '*Fled:* ');

@@ -1,5 +1,6 @@
 const Encounter = require('../mechanics/encounter.js');
 const Creatures = require('../content/creatures.js');
+const Effects = require('../mechanics/effects.js');
 const Util = require('../util/util.js');
 
 // Define all encounters
@@ -12,7 +13,15 @@ let encounters = {
       position3: [
         'Old Man'
       ]
-    }
+    },
+    effects: [
+      [Effects.getEffect('No Escape')],
+      [],
+      [Effects.getEffect('Sticky Floor')],
+      [],
+      [],
+      []
+    ]
   }
 };
 

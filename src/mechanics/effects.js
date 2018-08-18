@@ -39,6 +39,31 @@ let effects = {
         await battleManager.send('A new challenger approaches! ' + Util.capitalise(Util.formattedList(reducedList)) + ' join' + s + ' the fight!');
       }
     }
+  },
+  stickyFloor: {
+    name: 'Sticky Floor',
+    description: 'Can\'t move from this position.',
+    flavour: 'No retreat!',
+    ticks: null,
+    properties: {
+      onMoveForwardAttempt (char, battleManager) {
+        return 0;
+      },
+      onMoveBackwardAttempt (char, battleManager) {
+        return 0;
+      }
+    }
+  },
+  noEscape: {
+    name: 'No Escape',
+    description: 'Can\'t flee from this position.',
+    flavour: 'No surrender!',
+    ticks: null,
+    properties: {
+      onFleeAttempt (char, battleManager) {
+        return 0;
+      }
+    }
   }
 };
 
@@ -47,7 +72,7 @@ exports.getEffect = function (name, requiredParams) {
   if (!effectDetails) {
     throw new Error(`Effect with name ${name} not found!`);
   }
-  let effectToAdd = new Effect(effectDetails.name, effectDetails.description, effectDetails.flavour, effectDetails.ticks || 0, effectDetails.required, effectDetails.properties);
+  let effectToAdd = new Effect(effectDetails.name, effectDetails.description, effectDetails.flavour, 'ticks' in effectDetails ? effectDetails.ticks : 0, effectDetails.required, effectDetails.properties);
 
   for (let effectReq in effectToAdd.required) {
     if (!requiredParams[effectReq]) {
