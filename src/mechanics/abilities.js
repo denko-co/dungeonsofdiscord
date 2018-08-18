@@ -17,7 +17,7 @@ let abilities = {
     name: 'Flee',
     description: 'Special ability for running away',
     type: ['FLEE'],
-    icon: '🏳️'
+    icon: '🏳'
   },
   move: {
     name: 'Move',

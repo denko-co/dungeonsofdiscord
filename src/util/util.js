@@ -25,6 +25,12 @@ const getMention = function (userId) {
 
 exports.getMention = getMention;
 
+const getDisplayName = function (char) {
+  return char.owner ? this.getMention(char.owner) : char.name;
+};
+
+exports.getDisplayName = getDisplayName;
+
 const getIndefiniteArticle = function (words) {
   const vowels = ['a', 'e', 'i', 'o', 'u'];
   return vowels.includes(words.charAt(0).toLowerCase()) ? 'an' : 'a';
@@ -68,7 +74,9 @@ exports.reduceList = function (list) {
   return resultList;
 };
 
-exports.addReactions = function (message, reactionsArray) {
+exports.addReactions = function (message, origReactionsArray) {
+  // Take array copy
+  let reactionsArray = origReactionsArray.slice();
   if (reactionsArray.length === 0) return;
   let reaction = reactionsArray.shift();
   message.react(reaction).then(messageReaction => {

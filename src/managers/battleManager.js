@@ -22,8 +22,7 @@ module.exports = class BattleManager {
     await this.send(`*${Util.getBattleReadyText()}*`);
     await this.send(Util.getVsText(this.encounter.name));
     await this.send(`***${Util.getBattleStartText()}***`);
-    let turnResult = await this.performTurn();
-    return turnResult;
+    return this.performTurn();
   }
 
   async performTurn (reactionInfo) {
@@ -32,9 +31,13 @@ module.exports = class BattleManager {
       // performTurn called not off an action, perform a game turn tick
 
       if (effective.players.length === 0) {
-        // All players are dead! Oh no!
+        // All players are dead or fled! Oh no!
+        this.send('The battle is over! Game over man, game over!');
+        return 'EXPLORING';
       } else if (effective.players.enemies === 0) {
-        // All enemies are dead! Hooray!
+        // All enemies are dead or fled! Hooray!
+        this.send('The battle is over! You win!');
+        return 'EXPLORING';
       }
 
       if (this.queue.length === 0) {
@@ -45,7 +48,7 @@ module.exports = class BattleManager {
       // Now we have a queue with something in it, we can pop and evaluate
 
       let character = this.queue.shift();
-      await this.send((character.owner ? Util.getMention(character.owner) : character.name) + ', you\'re up!');
+      await this.send(Util.getDisplayName(character) + ', you\'re up!');
       if (character.owner) {
         // Hand to the player to do an action, give them options.
         let validActions = this.getValidActions(character);
@@ -62,8 +65,7 @@ module.exports = class BattleManager {
         // NPC, evaluate and tick (no interrupts).
         await character.logic.performTurn(this, character); // I don't know anyone I am
         // Let's go again!
-        let result = await this.performTurn();
-        return result;
+        return this.performTurn();
       }
     } else {
       if (this.playerInFocus && reactionInfo.user.id === this.playerInFocus.owner) {
@@ -85,8 +87,35 @@ module.exports = class BattleManager {
             } else if (options[0] === '🤷') {
               // Player is passing, do nothing
               this.send('Passing? Are you sure? Alright then.');
-              let result = await this.performTurn();
-              return result;
+              return this.performTurn();
+            } else if (options[0] === '🏳') {
+              // Player is running away
+              let fleeInfo = this.getFleeChance(this.playerInFocus);
+              // To hold chance
+              this.selectedAction = fleeInfo;
+              if (fleeInfo.chance === 0) {
+                // Bounce back to action select
+                await this.send(fleeInfo.msg);
+                return this.cancelAction('As you can\'t move, flee');
+              } else {
+                let fleeMessage = await this.send(fleeInfo.msg + 'Are you sure you want to run?', true);
+                Util.addReactions(fleeMessage, ['✅', '🚫']);
+                this.state = 'CONFIRM_FLEE';
+              }
+            } else if (options[0] === '↔') {
+              // Player is moving!
+              let moveInfo = this.getMoveActions(this.playerInFocus);
+              // Putting it into selected action, for now
+              this.selectedAction = moveInfo;
+              if (moveInfo.chance.left === 0 && moveInfo.chance.right === 0) {
+                // Bounce back to action select
+                await this.send(moveInfo.msg);
+                return this.cancelAction('As you can\'t move, movement');
+              } else {
+                let moveMessage = await this.send(moveInfo.msg + 'Where would you like to move?', true);
+                Util.addReactions(moveMessage, moveInfo.icons);
+                this.state = 'SELECT_MOVE';
+              }
             } else {
               // Option selected, slam it
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
@@ -99,16 +128,11 @@ module.exports = class BattleManager {
             return 'BATTLING';
           case 'SELECT_TARGET':
             if (reactionInfo.react === '🚫') {
-              // Bounce back to target select
-              let questionToAsk = await this.send('Targeting cancelled. What would you like to do?', true);
-              Util.addReactions(questionToAsk, this.getIconsForActions(this.actionsForPlayer));
-              this.state = 'SELECT_ABILITY';
-              return 'BATTLING';
+              // Bounce back to action select
+              return this.cancelAction('Targeting');
             } else if (reactionInfo.react === '✅') {
               // Let's go get the targets...
-              console.log(this.getTargetList(this.selectedAction.targets, true).icons);
               let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
-              console.log(targets);
               targets = Util.getEmojiNumbersAsInts(targets);
               if (targets.length !== this.selectedAction.action.targets.number) {
                 // Not enough / too many targets
@@ -123,10 +147,44 @@ module.exports = class BattleManager {
                 await this.useAbility(this.selectedAction.action, this.playerInFocus, targetChars);
 
                 // Turn over, move onto next person.
-                let result = await this.performTurn();
-                return result;
+                return this.performTurn();
               }
               return 'BATTLING';
+            } else {
+              return 'BATTLING'; // Nothing to do!
+            }
+          case 'SELECT_MOVE':
+            if (reactionInfo.react === '🚫') {
+              // Bounce back to action select
+              return this.cancelAction('Movement');
+            } else if (reactionInfo.react === '✅') {
+              // Which way are you going?
+              let directions = this.getSelectedOptions(reactions, _.without(this.selectedAction.icons, '🚫', '✅'), reactionInfo.user.id);
+              if (directions.length > 1) {
+                // Trying to move two ways at once
+                this.send('If you move in many directions at once, do you really move anywhere? Maybe, I failed my physics class.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else if (directions.length === 0) {
+                // Nothing selected
+                this.send('Please choose a direction to move in.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else {
+                // Attempt a move, do the next turn
+                await this.performMove(this.playerInFocus, directions[0], this.selectedAction.chance);
+                return this.performTurn();
+              }
+              return 'BATTLING';
+            } else {
+              return 'BATTLING'; // Nothing to do!
+            }
+          case 'CONFIRM_FLEE':
+            if (reactionInfo.react === '🚫') {
+              // Bounce back to action select
+              return this.cancelAction('Retreat');
+            } else if (reactionInfo.react === '✅') {
+              // Running away!
+              await this.performFlee(this.playerInFocus, this.selectedAction.chance);
+              return this.performTurn();
             } else {
               return 'BATTLING'; // Nothing to do!
             }
@@ -197,13 +255,30 @@ module.exports = class BattleManager {
     let numbers = Util.getNumbersAsEmoji();
     let targetString = '';
     for (let i = 0; i < targetList.length; i++) {
-      targetString += numbers[i] + ' - ' + targetList[i].name + '\n';
+      targetString += numbers[i] + ' - ' + Util.getDisplayName(targetList[i]) + '\n';
     }
     let targetIcons = numbers.slice(0, targetList.length);
     if (!onlyIcons) {
       targetIcons.push('✅', '🚫');
     }
     return {msg: targetString, icons: targetIcons};
+  }
+
+  getFleeChance (char) {
+    let msg = '';
+    let fleeChance = char.iterateEffects('FLEE', this, true);
+    if (fleeChance.chance === 0) {
+      msg += `Some effects have been applied and have reduced your chance to flee to 0%`;
+    } else {
+      msg += `Chance to flee: ${fleeChance.chance * 100}%`;
+    }
+    if (fleeChance.effectsTriggered.length !== 0) {
+      let effectList = fleeChance.effectsTriggered;
+      let effectString = Util.formattedList(effectList);
+      msg += `Effects applied: ${effectString}`;
+    }
+    msg += '\n';
+    return {msg: msg, chance: fleeChance.chance};
   }
 
   getMoveActions (char, onlyIcons) {
@@ -216,14 +291,14 @@ module.exports = class BattleManager {
       text: 'left',
       position: 0,
       direction: 'back',
-      icon: '⬅️'
+      icon: '⬅'
     });
     let moveRightDetails = char.iterateEffects('MOVE_FORWARD', this, true);
     _.extend(moveRightDetails, {
       text: 'right',
       position: 5,
       direction: 'forward',
-      icon: '➡️'
+      icon: '➡'
     });
 
     // Build message response
@@ -237,6 +312,11 @@ module.exports = class BattleManager {
           msg += `Some effects have been applied and have reduced your chance to move ${direction.text} to 0%`;
         } else {
           msg += `Chance to move ${direction.text}: ${direction.chance * 100}%`;
+        }
+        if (direction.effectsTriggered.length !== 0) {
+          let effectList = direction.effectsTriggered;
+          let effectString = Util.formattedList(effectList);
+          msg += `Effects applied: ${effectString}`;
         }
       }
       msg += '\n';
@@ -329,6 +409,46 @@ module.exports = class BattleManager {
     }
   }
 
+  async performFlee (char, fleeChance) {
+    if (Math.random() <= fleeChance) {
+      // Hooray!
+      await this.send(Util.getDisplayName(char) + ' has fled the battle!');
+      this.removeFromBattle(char, 'FLED');
+    } else {
+      // ;~;
+      await this.send(Util.getDisplayName(char) + ' has failed their escape. Stand and deliver!');
+    }
+  }
+
+  async performMove (char, directionIcon, moveChance) {
+    let direction = (directionIcon === '⬅' ? 'left' : 'right');
+    let successChance = moveChance[direction];
+    if (Math.random() <= successChance) {
+      // Hooray!
+      let newPos = this.movePlayer(char, direction);
+      await this.send('Successfully moved to position ' + newPos + '!');
+    } else {
+      // ;~;
+      await this.send('Despite your best effort, your legs fail you.');
+    }
+  }
+
+  movePlayer (char, direction) {
+    let location = this.getCharacterLocation(char);
+    let directionOffset = direction === 'left' ? -1 : 1;
+    this.battlefield[location.arrayPosition].splice(location.arraySubposition, 1);
+    this.battlefield[location.arrayPosition + directionOffset].push(char);
+    return location.arrayPosition + directionOffset + 1;
+  }
+
+  async cancelAction (actionText) {
+    // Bounce back to action select
+    let questionToAsk = await this.send(`${actionText} has been cancelled. What would you like to do?`, true);
+    Util.addReactions(questionToAsk, this.getIconsForActions(this.actionsForPlayer));
+    this.state = 'SELECT_ABILITY';
+    return 'BATTLING';
+  }
+
   async useAbility (ability, caster, targets) {
     let effect = Util.clone(ability.effect); // Take copy
     effect.whoApplied = caster;
@@ -342,7 +462,7 @@ module.exports = class BattleManager {
         let target = targets[i];
         await effect.onApply(this, caster, target);
         if (!target.alive) {
-          await this.send(target.name + ' has been slain!');
+          await this.send(Util.getDisplayName(target) + ' has been slain!');
           this.removeFromBattle(target, 'DEAD');
         } else {
           target.effects.push(effect);
@@ -362,7 +482,7 @@ module.exports = class BattleManager {
       if (battle[i].length === 0) text += no;
       for (let j = 0; j < battle[i].length; j++) {
         let char = battle[i][j];
-        text += (j === 0 ? '' : ', ') + (char.owner ? Util.getMention(char.owner) : char.name) + ' @ ' + char.currenthp + '/' + char.hp + ' hp';
+        text += (j === 0 ? '' : ', ') + Util.getDisplayName(char) + ' @ ' + char.currenthp + '/' + char.hp + ' hp';
       }
       text += '\n';
     }
