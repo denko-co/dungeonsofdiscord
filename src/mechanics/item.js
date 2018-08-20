@@ -1,19 +1,16 @@
 module.exports = class Item {
-  constructor (name, description, flavour, uses, abilities, effects) {
+  constructor (name, description, flavour, abilities, effects, onUse) {
     this.name = name;
     this.description = description;
     this.flavour = flavour;
-    this.uses = uses;
-    this.currentUses = 0;
     this.abilities = abilities || [];
     this.effects = effects || [];
+    this.onUse = onUse;
   }
 
   getItemDetails () {
-    let text = '**' + this.name + '**' + ' ' + this.description + ' ';
-    let info = '';
-    if (this.uses) info += this.currentUses + '/' + this.uses + 'uses';
-    text += ' ' + (info === '' ? '' : '(' + info + ')') + '\n*' + this.name + ' abilities:* ';
+    let text = '**' + this.name + '**' + ' ' + this.description + '\n';
+    text += '*' + this.name + ' abilities:* ';
 
     text += this.abilities.length === 0 ? '-' : '\n';
 

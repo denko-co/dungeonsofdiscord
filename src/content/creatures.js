@@ -28,7 +28,8 @@ let creatures = {
     hp: 10,
     speed: 'FAST',
     abilityNames: [
-      'Training Preparation'
+      'Training Preparation',
+      'Drop Party'
     ],
     logic: {
       undamagedTurns: 0,
@@ -49,6 +50,7 @@ let creatures = {
               await battleManager.send('"C\'mon guys, you gotta do SOMETHING."');
             } else {
               await battleManager.send('"Very good!" he exclaims. You can tell he is *very impressed*.');
+              await battleManager.useAbility(me.abilities[1], me, Util.getEffectiveCharacters(battleManager.battlefield).players);
             }
         }
       }

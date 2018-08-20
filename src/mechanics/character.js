@@ -25,8 +25,13 @@ module.exports = class Character {
     this.alive = true;
   }
 
-  dealDamage (amount) {
-    this.currenthp -= amount;
+  dealDamage (amount, source, battleManager) {
+    let damageReducers = this.getListeningEffects(battleManager, 'onRecieveDamage');
+    let newAmount = damageReducers.reduce((currentDamage, ele) => {
+      let newDamage = ele.onRecieveDamage(currentDamage, this, source);
+      return newDamage < 0 ? 0 : newDamage;
+    }, amount);
+    this.currenthp -= newAmount;
     // Handle death and on damage effects
     if (this.currenthp <= 0) {
       this.alive = false;
@@ -70,9 +75,8 @@ module.exports = class Character {
     return false;
   }
 
-  async iterateEffects (abilityType, battleManager, getChance) {
-    let currentChance = 1;
-    let effectsTriggered = [];
+  getListeningEffects (battleManager, functionName) {
+    let effects = [];
     let battleEffects = [];
     let itemEffects = [];
     if (battleManager) {
@@ -82,21 +86,14 @@ module.exports = class Character {
       itemEffects = itemEffects.concat(item.effects);
     });
     let effectsToCheck = itemEffects.concat(this.effects).concat(battleEffects);
-    let functionName = 'on' + Util.titleCase(abilityType) + (getChance ? 'Attempt' : '');
     for (let i = 0; i < effectsToCheck.length; i++) {
       let effect = effectsToCheck[i];
       if (effect[functionName]) {
-        let result = await effect[functionName](this, battleManager);
-        if (getChance) currentChance *= result;
-        effectsTriggered.push(effect.name);
+        effects.push(effect.name);
       }
     }
 
-    // If not a getChance call then currentChance will be 1, because it already happened, ya feel?
-    return {
-      effectsTriggered: effectsTriggered,
-      chance: currentChance
-    };
+    return effects;
   }
 
   getCharacterDetails (battleManager) {

@@ -1,4 +1,6 @@
 const Effect = require('./effect.js');
+const Creatures = require('../content/creatures.js');
+const Items = require('./items.js');
 const Util = require('../util/util.js');
 
 // Define all effects
@@ -11,10 +13,25 @@ let effects = {
       getDamage: 'function'
     },
     properties: {
-      async onApply (battleManager, caster, target) {
+      async onApply (battleManager, caster, target, ability) {
         let dmg = this.getDamage();
-        target.dealDamage(dmg);
-        await battleManager.send(target.name + ' takes ' + dmg + ' damage!');
+        target.dealDamage(dmg, caster, battleManager);
+        await battleManager.send(Util.getDisplayName(target) + ' takes ' + dmg + ' damage!');
+      }
+    }
+  },
+  selectiveBlock: {
+    name: 'Selective Block',
+    description: 'Reducing incoming damage, more for some enemies.',
+    flavour: 'I guess "selective" is one way of putting it.',
+    ticks: 1,
+    required: {
+      baseReduce: 'function',
+      creatures: 'array'
+    },
+    properties: {
+      async onRecieveDamage (dmg, target, source) {
+        return this.creatures.includes(source.name) ? 0 : this.baseReduce(dmg);
       }
     }
   },
@@ -26,17 +43,35 @@ let effects = {
       toSummon: 'array'
     },
     properties: {
-      async onBattlefieldApply (battleManager, caster, locationsArray) {
+      async onBattlefieldApply (battleManager, caster, locationsArray, ability) {
         let currentSummon = 0;
         let summonedNames = [];
         for (let i = 0; i < locationsArray.length; i++) {
-          battleManager.battlefield[locationsArray[i]].push(Util.clone(this.toSummon[currentSummon]));
-          summonedNames.push(this.toSummon[currentSummon].name);
+          let monsterToSummon = Creatures.getCreature(this.toSummon[currentSummon]);
+          battleManager.battlefield[locationsArray[i]].push(monsterToSummon);
+          summonedNames.push(monsterToSummon.name);
           currentSummon = currentSummon + 1 === this.toSummon.length ? 0 : currentSummon + 1;
         }
         var reducedList = Util.reduceList(summonedNames);
         var s = reducedList.length === 1 ? 's' : '';
         await battleManager.send('A new challenger approaches! ' + Util.capitalise(Util.formattedList(reducedList)) + ' join' + s + ' the fight!');
+      }
+    }
+  },
+  giveItem: {
+    name: 'Give Item',
+    description: 'Gives a collection of items to a player. Should resolve immediately.',
+    flavour: 'When life gives you lemons.',
+    required: {
+      toGive: 'array'
+    },
+    properties: {
+      async onApply (battleManager, caster, target, ability) {
+        for (let i = 0; i < this.toGive.length; i++) {
+          let newItem = Items.getItem(this.toGive[i]);
+          target.items.push(newItem);
+          await battleManager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.name + '**: *' + newItem.flavour + '*');
+        }
       }
     }
   },

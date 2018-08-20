@@ -102,7 +102,7 @@ module.exports = class BattleManager {
               return this.performTurn();
             } else if (options[0] === '🏳') {
               // Player is running away
-              let fleeInfo = await this.getFleeChance(this.characterInFocus);
+              let fleeInfo = this.getFleeChance(this.characterInFocus);
               // To hold chance
               this.selectedAction = fleeInfo;
               if (fleeInfo.chance === 0) {
@@ -116,7 +116,7 @@ module.exports = class BattleManager {
               }
             } else if (options[0] === '↔') {
               // Player is moving!
-              let moveInfo = await this.getMoveActions(this.characterInFocus);
+              let moveInfo = this.getMoveActions(this.characterInFocus);
               // Putting it into selected action, for now
               this.selectedAction = moveInfo;
               if (moveInfo.chance.left === 0 && moveInfo.chance.right === 0) {
@@ -146,7 +146,7 @@ module.exports = class BattleManager {
               // Let's go get the targets...
               let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
               targets = Util.getEmojiNumbersAsInts(targets);
-              if (targets.length !== this.selectedAction.action.targets.number) {
+              if (targets.length > this.selectedAction.action.targets.number) {
                 // Not enough / too many targets
                 this.send('Pls select the correct number of targets.');
                 reactionInfo.messageReaction.remove(reactionInfo.user);
@@ -278,42 +278,52 @@ module.exports = class BattleManager {
     return {msg: targetString, icons: targetIcons};
   }
 
-  async getFleeChance (char) {
+  getFleeChance (char) {
     let msg = '';
-    let fleeChance = await char.iterateEffects('FLEE', this, true);
-    if (fleeChance.chance === 0) {
+    let fleeEffects = char.getListeningEffects(this, 'onFleeAttempt');
+    let fleeEffectNames = fleeEffects.map(ele => ele.name);
+    let chance = fleeEffects.reduce((currentChance, ele) => {
+      currentChance *= ele.onMoveBackwardAttempt(char, this);
+    }, 1);
+    if (chance === 0) {
       msg += `Some effects have been applied and have reduced your chance to flee to 0%`;
     } else {
-      msg += `Chance to flee: ${fleeChance.chance * 100}%`;
+      msg += `Chance to flee: ${chance * 100}%`;
     }
-    if (fleeChance.effectsTriggered.length !== 0) {
-      let effectList = fleeChance.effectsTriggered;
-      let effectString = Util.formattedList(effectList);
-      msg += `\nEffects applied: *${effectString}*`;
+    if (fleeEffectNames.length !== 0) {
+      msg += `\nEffects applied: *${Util.formattedList(fleeEffectNames)}*`;
     }
     msg += '\n';
-    return {msg: msg, chance: fleeChance.chance};
+    return {msg: msg, chance: chance};
   }
 
-  async getMoveActions (char, onlyIcons) {
+  getMoveActions (char, onlyIcons) {
     let position = this.getCharacterLocation(char).arrayPosition;
     let msg = '';
     let icons = [];
     // Check if able to move
-    let moveLeftDetails = await char.iterateEffects('MOVE_BACKWARD', this, true);
-    _.extend(moveLeftDetails, {
+    let moveLeftEffects = char.getListeningEffects(this, 'onMoveBackwardAttempt');
+    let moveLeftDetails = {
+      effectsTriggered: moveLeftEffects.map(ele => ele.name),
+      chance: moveLeftEffects.reduce((currentChance, ele) => {
+        currentChance *= ele.onMoveBackwardAttempt(char, this);
+      }, 1),
       text: 'left',
       position: 0,
       direction: 'back',
       icon: '⬅'
-    });
-    let moveRightDetails = await char.iterateEffects('MOVE_FORWARD', this, true);
-    _.extend(moveRightDetails, {
+    };
+    let moveRightEffects = char.getListeningEffects(this, 'onMoveForwardAttempt');
+    let moveRightDetails = {
+      effectsTriggered: moveRightEffects.map(ele => ele.name),
+      chance: moveLeftEffects.reduce((currentChance, ele) => {
+        currentChance *= ele.onMoveForwardAttempt(char, this);
+      }, 1),
       text: 'right',
       position: 5,
       direction: 'forward',
       icon: '➡'
-    });
+    };
 
     // Build message response
     [moveLeftDetails, moveRightDetails].forEach(direction => {
@@ -501,7 +511,7 @@ module.exports = class BattleManager {
     if (ability.targets.number === 0) {
       // Battlefield effect, oBA handles the placement (battleManager still does cleanup ? )
       if (effect.onBattlefieldApply) {
-        await effect.onBattlefieldApply(this, caster, targets);
+        await effect.onBattlefieldApply(this, caster, targets, ability);
       }
       targets.forEach(target => {
         this.battlefieldEffects[target].push(effect);
@@ -511,7 +521,7 @@ module.exports = class BattleManager {
       for (let i = 0; i < targets.length; i++) {
         let target = targets[i];
         if (effect.onApply) {
-          await effect.onApply(this, caster, target);
+          await effect.onApply(this, caster, target, ability);
         }
         if (!target.alive) {
           await this.send(Util.getDisplayName(target) + ' has been slain!');
