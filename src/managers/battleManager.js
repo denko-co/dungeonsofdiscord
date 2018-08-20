@@ -146,9 +146,9 @@ module.exports = class BattleManager {
               // Let's go get the targets...
               let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
               targets = Util.getEmojiNumbersAsInts(targets);
-              if (targets.length > this.selectedAction.action.targets.number) {
+              if (targets.length > this.selectedAction.action.targets.number || targets.length === 0) {
                 // Not enough / too many targets
-                this.send('Pls select the correct number of targets.');
+                this.send('Pls select a valid number of targets (at least 1).');
                 reactionInfo.messageReaction.remove(reactionInfo.user);
               } else {
                 // Gogogogogo!
@@ -373,6 +373,7 @@ module.exports = class BattleManager {
     // Can always move (might be blocked by effects but in premise)
     actionList.push({action: Abilities.getAbility('Move'), targets: null});
     // Can only run away if in position 1 (and even then...)
+    // This should check if they are an enemy, really
     if (this.getCharacterLocation(char).arrayPosition === 0) {
       actionList.push({action: Abilities.getAbility('Flee'), targets: null});
     }

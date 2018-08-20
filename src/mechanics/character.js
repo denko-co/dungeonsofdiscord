@@ -84,6 +84,14 @@ module.exports = class Character {
     return false;
   }
 
+  hasEffect (effectName, battleManager) {
+    let effects = this.getAllEffects(battleManager);
+    for (let i = 0; i < effects.length; i++) {
+      if (effects[i].name === effectName) return true;
+    }
+    return false;
+  }
+
   getAllEffects (battleManager) {
     let battleEffects = [];
     let itemEffects = [];

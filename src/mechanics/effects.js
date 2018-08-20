@@ -35,6 +35,14 @@ let effects = {
       }
     }
   },
+  anxiety: {
+    name: 'Anxiety',
+    description: 'Truly the worst weapon. Just a filler for applying a status, should make more generic.',
+    flavour: 'Shake and rattle, no roll.',
+    ticks: Infinity,
+    required: {},
+    properties: {}
+  },
   summon: {
     name: 'Summon',
     description: 'Battlefield effect to create a creature at specific location(s). Should resolve immediately.',
@@ -75,8 +83,8 @@ let effects = {
       }
     }
   },
-  mysticalUphill: {
-    name: 'Mystical Uphill',
+  cautiousCliffside: {
+    name: 'Cautious Cliffside',
     description: 'Can\'t move forward from this position.',
     flavour: 'The grass is always greener on the other side.',
     ticks: null,

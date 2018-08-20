@@ -19,7 +19,7 @@ let encounters = {
       [Effects.getEffect('No Escape')],
       [],
       // [],
-      [Effects.getEffect('Mystical Uphill')],
+      [Effects.getEffect('Cautious Cliffside')],
       [],
       [],
       []

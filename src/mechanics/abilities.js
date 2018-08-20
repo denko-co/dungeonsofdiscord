@@ -61,6 +61,19 @@ let abilities = {
     range: 0,
     icon: '🛡'
   },
+  makeWorried: {
+    name: 'Make Worried',
+    description: 'How do you fell a goliath?',
+    flavour: 'Sounds like the setup to a poor joke.',
+    type: ['STATUS'],
+    targets: {
+      number: 1,
+      type: 'ENEMY'
+    },
+    effect: Effects.getEffect('Anxiety', {}),
+    range: 2,
+    icon: '😟'
+  },
   // Creature abilities
   trainingPreparation: {
     name: 'Training Preparation',
@@ -77,6 +90,16 @@ let abilities = {
     type: ['GIVE_ITEM'],
     effect: Effects.getEffect('Give Item', {
       toGive: ['Training Shield']
+    }),
+    targets: {
+      number: Infinity
+    }
+  },
+  dropParty2: {
+    name: 'Drop Party 2',
+    type: ['GIVE_ITEM'],
+    effect: Effects.getEffect('Give Item', {
+      toGive: ['Bottled Anxiety']
     }),
     targets: {
       number: Infinity

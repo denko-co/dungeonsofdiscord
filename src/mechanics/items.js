@@ -19,6 +19,14 @@ let items = {
     abilityNames: [
       'Dummy Defense'
     ]
+  },
+  bottledAnxiety: {
+    name: 'Bottled Anxiety',
+    description: 'A small vibrating vial of grey liquid. I wonder what this does?',
+    flavour: 'It rattles, like it\'s nervous.',
+    abilityNames: [
+      'Make Worried'
+    ]
   }
 };
 
