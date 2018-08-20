@@ -10,14 +10,29 @@ let creatures = {
     description: 'Training, for dummies.',
     hp: 9001,
     speed: 'SLOW',
+    abilityNames: [
+      'Training Strike'
+    ],
     logic: {
       hurt: false,
+      swung: false,
       async performTurn (battleManager, me) {
         if (me.currenthp === me.hp) {
           await battleManager.send('The Dummy gazes at our heroes stoicly, although inside it is deeply troubled. How did he get here? What is his purpose? What is he supposed to do?');
         } else if (!me.logic.hurt) {
           me.logic.hurt = true;
           await battleManager.send('The Dummy has emotional wounds far deeper than its external ones. Has it been brought into this world only to suffer? The force of the strike has knocked them back. They prepare a counter.');
+        } else if (!me.logic.swung) {
+          let playersTargetable = battleManager.battlefield[2]; // This should be a real check someday
+          if (playersTargetable.length === 0) {
+            // They moved out of range!
+            await battleManager.send('The Dummy bounces back and swings into the open air. In the distance, For the Damaged Coda plays. They have been defeated.');
+          } else {
+            // Hit it very hard!
+            await battleManager.send('The Dummy bounces back and swings forward with all of its might.');
+            await battleManager.useAbility(me.abilities[0], me, [playersTargetable[0]]);
+          }
+          me.logic.swung = true;
         }
       }
     }

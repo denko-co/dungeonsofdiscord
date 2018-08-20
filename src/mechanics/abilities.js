@@ -81,6 +81,19 @@ let abilities = {
     targets: {
       number: Infinity
     }
+  },
+  trainingStrike: {
+    name: 'Training Strike',
+    type: ['DAMAGE'],
+    effect: Effects.getEffect('Flat Damage', {
+      getDamage: function () {
+        return 1748955718;
+      }
+    }),
+    targets: {
+      number: 1
+    },
+    range: 1
   }
 };
 

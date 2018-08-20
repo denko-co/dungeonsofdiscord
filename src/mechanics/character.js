@@ -25,13 +25,22 @@ module.exports = class Character {
     this.alive = true;
   }
 
-  dealDamage (amount, source, battleManager) {
+  async dealDamage (amount, source, battleManager) {
     let damageReducers = this.getListeningEffects(battleManager, 'onRecieveDamage');
-    let newAmount = damageReducers.reduce((currentDamage, ele) => {
-      let newDamage = ele.onRecieveDamage(currentDamage, this, source);
-      return newDamage < 0 ? 0 : newDamage;
-    }, amount);
-    this.currenthp -= newAmount;
+    let reducedDamage = amount;
+    for (let i = 0; i < damageReducers.length; i++) {
+      // I would use a reducer here but it's async, need to figure out the pattern for this
+      let newDamage = await damageReducers[i].onRecieveDamage(reducedDamage, this, source);
+      reducedDamage = newDamage < 0 ? 0 : newDamage;
+    }
+    if (battleManager) {
+      // Do this through gamemanager later
+      if (reducedDamage !== amount) {
+        battleManager.send('However, ' + Util.formattedList(damageReducers.map(ele => ele.name)) + ' ' +
+            (damageReducers.length === 1 ? 'has ' : 'have ') + 'reduced this to ' + reducedDamage + '.');
+      }
+    }
+    this.currenthp -= reducedDamage;
     // Handle death and on damage effects
     if (this.currenthp <= 0) {
       this.alive = false;
@@ -50,7 +59,7 @@ module.exports = class Character {
     }
     for (let i = this.effects.length - 1; i >= 0; i--) {
       // Same again
-      let toRemove = await this.processEffect(this.effects[0], character, battleManager);
+      let toRemove = await this.processEffect(this.effects[i], character, battleManager);
       if (toRemove) {
         this.effects.splice(i, 1);
       }

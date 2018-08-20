@@ -15,8 +15,8 @@ let effects = {
     properties: {
       async onApply (battleManager, caster, target, ability) {
         let dmg = this.getDamage();
-        target.dealDamage(dmg, caster, battleManager);
         await battleManager.send(Util.getDisplayName(target) + ' takes ' + dmg + ' damage!');
+        await target.dealDamage(dmg, caster, battleManager);
       }
     }
   },
