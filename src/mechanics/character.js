@@ -75,8 +75,7 @@ module.exports = class Character {
     return false;
   }
 
-  getListeningEffects (battleManager, functionName) {
-    let effects = [];
+  getAllEffects (battleManager) {
     let battleEffects = [];
     let itemEffects = [];
     if (battleManager) {
@@ -85,15 +84,11 @@ module.exports = class Character {
     this.items.forEach(item => {
       itemEffects = itemEffects.concat(item.effects);
     });
-    let effectsToCheck = itemEffects.concat(this.effects).concat(battleEffects);
-    for (let i = 0; i < effectsToCheck.length; i++) {
-      let effect = effectsToCheck[i];
-      if (effect[functionName]) {
-        effects.push(effect.name);
-      }
-    }
+    return itemEffects.concat(this.effects).concat(battleEffects);
+  }
 
-    return effects;
+  getListeningEffects (battleManager, functionName) {
+    return this.getAllEffects(battleManager).filter(effect => effect[functionName]);
   }
 
   getCharacterDetails (battleManager) {

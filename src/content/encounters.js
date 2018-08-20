@@ -15,9 +15,11 @@ let encounters = {
       ]
     },
     effects: [
-      [], // [Effects.getEffect('No Escape')],
+      // [],
+      [Effects.getEffect('No Escape')],
       [],
-      [], // [Effects.getEffect('Sticky Floor')],
+      // [],
+      [Effects.getEffect('Mystical Uphill')],
       [],
       [],
       []

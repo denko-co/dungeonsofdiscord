@@ -283,7 +283,7 @@ module.exports = class BattleManager {
     let fleeEffects = char.getListeningEffects(this, 'onFleeAttempt');
     let fleeEffectNames = fleeEffects.map(ele => ele.name);
     let chance = fleeEffects.reduce((currentChance, ele) => {
-      currentChance *= ele.onMoveBackwardAttempt(char, this);
+      return currentChance * ele.onFleeAttempt(char, this);
     }, 1);
     if (chance === 0) {
       msg += `Some effects have been applied and have reduced your chance to flee to 0%`;
@@ -306,7 +306,7 @@ module.exports = class BattleManager {
     let moveLeftDetails = {
       effectsTriggered: moveLeftEffects.map(ele => ele.name),
       chance: moveLeftEffects.reduce((currentChance, ele) => {
-        currentChance *= ele.onMoveBackwardAttempt(char, this);
+        return currentChance * ele.onMoveBackwardAttempt(char, this);
       }, 1),
       text: 'left',
       position: 0,
@@ -316,8 +316,8 @@ module.exports = class BattleManager {
     let moveRightEffects = char.getListeningEffects(this, 'onMoveForwardAttempt');
     let moveRightDetails = {
       effectsTriggered: moveRightEffects.map(ele => ele.name),
-      chance: moveLeftEffects.reduce((currentChance, ele) => {
-        currentChance *= ele.onMoveForwardAttempt(char, this);
+      chance: moveRightEffects.reduce((currentChance, ele) => {
+        return currentChance * ele.onMoveForwardAttempt(char, this);
       }, 1),
       text: 'right',
       position: 5,

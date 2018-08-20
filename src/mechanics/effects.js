@@ -75,16 +75,13 @@ let effects = {
       }
     }
   },
-  stickyFloor: {
-    name: 'Sticky Floor',
-    description: 'Can\'t move from this position.',
-    flavour: 'No retreat!',
+  mysticalUphill: {
+    name: 'Mystical Uphill',
+    description: 'Can\'t move forward from this position.',
+    flavour: 'The grass is always greener on the other side.',
     ticks: null,
     properties: {
       onMoveForwardAttempt (char, battleManager) {
-        return 0;
-      },
-      onMoveBackwardAttempt (char, battleManager) {
         return 0;
       }
     }
