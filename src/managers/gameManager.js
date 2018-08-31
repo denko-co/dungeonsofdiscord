@@ -11,77 +11,95 @@ module.exports = class GameManager {
     this.messageId = null;
     this.players = [[], [], []];
     this.state = 'READY';
-    this.readied = false;
     this.currentBattle = null;
     this.battleNumber = 1;
+    this.sendQueue = [];
+    this.gameQueue = Promise.resolve();
   }
 
-  async initialise () {
-    let startingMessage = await this.send(tr.welcome, true);
-    Util.addReactions(startingMessage, ['🙋', '✅']);
+  initialise () {
+    this.send(tr.welcome, ['🙋', '✅'], true);
+    return this.sendAll();
   }
 
-  async send (string, saveId) {
-    console.log('Sending \'' + string + '\'');
-    return this.bot.channels.get(this.channelId).send(string).then(message => {
-      if (saveId) { this.messageId = message.id; }
-      return message;
+  // Send is not really a send, it's a push to queue to resolve later
+  send (message, reactions, saveId) {
+    console.log(`Sending '${message}'`);
+    this.sendQueue.push({
+      message: message,
+      reactions: reactions,
+      saveId: saveId
     });
   }
 
-  async handleReaction (messageReaction, user) {
-    let react = messageReaction.emoji.name;
-    let message = messageReaction.message;
-    switch (this.state) {
-      case 'READY':
-        if (react !== '✅') return;
-        // Setup players and get ready to rumble
-        let ready = message.reactions.get('🙋');
-        if (ready.users.size <= 1) {
-          this.send(tr.tooSmall);
-          messageReaction.remove(user);
-        } else if (ready.users.size >= 4) {
-          this.send(tr.tooLarge);
-          messageReaction.remove(user);
-        } else if (!ready.users.keyArray().includes(user.id)) {
-          this.send(tr.notOnQuest);
-          messageReaction.remove(user);
-        } else {
-          // SYNCHRONISE XD
-          if (this.readied) return;
-          this.readied = true;
-          let playersToAddress = [];
-          ready.users.forEach((user) => {
-            if (!user.bot) {
-              this.addPlayer(user.id);
-              playersToAddress.push(user.id);
-            }
-          });
-          await this.send(Util.mentionList(playersToAddress) + tr.letsRock);
-          // start the battle
-          this.currentBattle = new BattleManager(this, Encounters.getEncounter('Tutorial'));
-          let initResult = await this.currentBattle.initialise();
-          if (initResult === 'EXPLORING') this.battleNumber++;
-          this.state = initResult;
-        }
-        break;
-      case 'BATTLING':
-        let turnResult = await this.currentBattle.performTurn({
-          messageReaction: messageReaction,
-          react: react,
-          user: user,
-          message: message
-        });
-        if (turnResult === 'EXPLORING') this.battleNumber++;
-        this.state = turnResult;
-        break;
+  async sendAll () {
+    let msgObj = this.sendQueue.shift();
+    while (msgObj) {
+      await this.sendMsgObject(msgObj);
+      msgObj = this.sendQueue.shift();
     }
   }
 
-  async handleMessage (message) {
+  sendMsgObject (msgObj) {
+    return this.bot.channels.get(this.channelId).send(msgObj.message).then(message => {
+      if (msgObj.saveId) { this.messageId = message.id; }
+      return Util.addReactions(message, msgObj.reactions);
+    });
+  }
+
+  handleReaction (messageReaction, user) {
+    if (messageReaction.message.id === this.messageId) {
+      let react = messageReaction.emoji.name;
+      let message = messageReaction.message;
+      switch (this.state) {
+        case 'READY':
+          if (react !== '✅') return;
+          // Setup players and get ready to rumble
+          let ready = message.reactions.get('🙋');
+          if (ready.users.size <= 1) {
+            this.send(tr.tooSmall);
+            messageReaction.remove(user);
+          } else if (ready.users.size >= 4) {
+            this.send(tr.tooLarge);
+            messageReaction.remove(user);
+          } else if (!ready.users.keyArray().includes(user.id)) {
+            this.send(tr.notOnQuest);
+            messageReaction.remove(user);
+          } else {
+            let playersToAddress = [];
+            ready.users.forEach((user) => {
+              if (!user.bot) {
+                this.addPlayer(user.id);
+                playersToAddress.push(user.id);
+              }
+            });
+            this.send(Util.mentionList(playersToAddress) + tr.letsRock);
+            // start the battle
+            this.currentBattle = new BattleManager(this, Encounters.getEncounter('Tutorial'));
+            let initResult = this.currentBattle.initialise();
+            if (initResult === 'EXPLORING') this.battleNumber++;
+            this.state = initResult;
+          }
+          break;
+        case 'BATTLING':
+          let turnResult = this.currentBattle.performTurn({
+            messageReaction: messageReaction,
+            react: react,
+            user: user,
+            message: message
+          });
+          if (turnResult === 'EXPLORING') this.battleNumber++;
+          this.state = turnResult;
+          break;
+      }
+    }
+    return this.sendAll();
+  }
+
+  handleMessage (message) {
     let command = message.content.substring(1).toLowerCase();
     if (this.currentBattle && (command === 'battle' || command === 'battlefield')) {
-      await this.send(this.currentBattle.getBattlefield());
+      this.send(this.currentBattle.getBattlefield());
     } else if (command === 'me') {
       this.players.forEach(arr => {
         arr.forEach(char => {
@@ -92,6 +110,7 @@ module.exports = class GameManager {
       });
     }
     console.log(command);
+    return this.sendAll();
   }
 
   addPlayer (userId) {

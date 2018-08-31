@@ -13,10 +13,10 @@ let effects = {
       getDamage: 'function'
     },
     properties: {
-      async onApply (battleManager, caster, target, ability) {
+      onApply (battleManager, caster, target, ability) {
         let dmg = this.getDamage();
-        await battleManager.send(Util.getDisplayName(target) + ' takes ' + dmg + ' damage!');
-        await target.dealDamage(dmg, caster, battleManager);
+        battleManager.send(Util.getDisplayName(target) + ' takes ' + dmg + ' damage!');
+        target.dealDamage(dmg, caster, battleManager);
       }
     }
   },
@@ -30,7 +30,7 @@ let effects = {
       creatures: 'array'
     },
     properties: {
-      async onRecieveDamage (dmg, target, source) {
+      onRecieveDamage (dmg, target, source) {
         return this.creatures.includes(source.name) ? 0 : this.baseReduce(dmg);
       }
     }
@@ -51,7 +51,7 @@ let effects = {
       toSummon: 'array'
     },
     properties: {
-      async onBattlefieldApply (battleManager, caster, locationsArray, ability) {
+      onBattlefieldApply (battleManager, caster, locationsArray, ability) {
         let currentSummon = 0;
         let summonedNames = [];
         for (let i = 0; i < locationsArray.length; i++) {
@@ -62,7 +62,7 @@ let effects = {
         }
         var reducedList = Util.reduceList(summonedNames);
         var s = reducedList.length === 1 ? 's' : '';
-        await battleManager.send('A new challenger approaches! ' + Util.capitalise(Util.formattedList(reducedList)) + ' join' + s + ' the fight!');
+        battleManager.send('A new challenger approaches! ' + Util.capitalise(Util.formattedList(reducedList)) + ' join' + s + ' the fight!');
       }
     }
   },
@@ -74,11 +74,11 @@ let effects = {
       toGive: 'array'
     },
     properties: {
-      async onApply (battleManager, caster, target, ability) {
+      onApply (battleManager, caster, target, ability) {
         for (let i = 0; i < this.toGive.length; i++) {
           let newItem = Items.getItem(this.toGive[i]);
           target.items.push(newItem);
-          await battleManager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.name + '**: *' + newItem.flavour + '*');
+          battleManager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.name + '**: *' + newItem.flavour + '*');
         }
       }
     }

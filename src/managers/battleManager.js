@@ -20,14 +20,14 @@ module.exports = class BattleManager {
     this.turn = 0;
   }
 
-  async initialise () {
-    await this.send(`*${Util.getBattleReadyText()}*`);
-    await this.send(Util.getVsText(this.encounter.name));
-    await this.send(`***${Util.getBattleStartText()}***`);
+  initialise () {
+    this.send(`*${Util.getBattleReadyText()}*`);
+    this.send(Util.getVsText(this.encounter.name));
+    this.send(`***${Util.getBattleStartText()}***`);
     return this.performTurn();
   }
 
-  async performTurn (reactionInfo) {
+  performTurn (reactionInfo) {
     if (!reactionInfo) {
       let effective = Util.getEffectiveCharacters(this.battlefield);
       // performTurn called not off an action, perform a game turn tick
@@ -44,7 +44,7 @@ module.exports = class BattleManager {
 
       // Cleanup all effects for the turn just gone
       if (this.characterInFocus) {
-        await this.cleanupEffects(this.characterInFocus, effective.players.concat(effective.enemies));
+        this.cleanupEffects(this.characterInFocus, effective.players.concat(effective.enemies));
       }
 
       if (this.queue.length === 0) {
@@ -52,7 +52,7 @@ module.exports = class BattleManager {
 
         // Take this opportunity to cleanup for dead/fled people
         for (let i = 0; i < this.graveyard.length; i++) {
-          await this.cleanupEffects(this.graveyard[i], effective.players.concat(effective.enemies));
+          this.cleanupEffects(this.graveyard[i], effective.players.concat(effective.enemies));
         }
         this.turn++;
       }
@@ -61,7 +61,7 @@ module.exports = class BattleManager {
 
       let character = this.queue.shift();
       this.characterInFocus = character;
-      await this.send(Util.getDisplayName(character) + ', you\'re up!');
+      this.send(Util.getDisplayName(character) + ', you\'re up!');
       if (character.owner) {
         // Hand to the player to do an action, give them options.
         let validActions = this.getValidActions(character);
@@ -70,12 +70,11 @@ module.exports = class BattleManager {
         this.actionsForPlayer = validActions;
         this.state = 'SELECT_ABILITY';
 
-        let questionToAsk = await this.send('What would you like to do?', true);
-        Util.addReactions(questionToAsk, this.getIconsForActions(validActions));
+        this.send('What would you like to do?', this.getIconsForActions(validActions), true);
         return 'BATTLING';
       } else {
         // NPC, evaluate and tick (no interrupts).
-        await character.logic.performTurn(this, character); // I don't know anyone I am
+        character.logic.performTurn(this, character); // I don't know anyone I am
         // Let's go again!
         return this.performTurn();
       }
@@ -107,11 +106,10 @@ module.exports = class BattleManager {
               this.selectedAction = fleeInfo;
               if (fleeInfo.chance === 0) {
                 // Bounce back to action select
-                await this.send(fleeInfo.msg);
+                this.send(fleeInfo.msg);
                 return this.cancelAction('As you can\'t flee, your retreat');
               } else {
-                let fleeMessage = await this.send(fleeInfo.msg + 'Are you sure you want to run?', true);
-                Util.addReactions(fleeMessage, ['✅', '🚫']);
+                this.send(fleeInfo.msg + 'Are you sure you want to run?', ['✅', '🚫'], true);
                 this.state = 'CONFIRM_FLEE';
               }
             } else if (options[0] === '↔') {
@@ -121,11 +119,10 @@ module.exports = class BattleManager {
               this.selectedAction = moveInfo;
               if (moveInfo.chance.left === 0 && moveInfo.chance.right === 0) {
                 // Bounce back to action select
-                await this.send(moveInfo.msg);
+                this.send(moveInfo.msg);
                 return this.cancelAction('As you can\'t move, movement');
               } else {
-                let moveMessage = await this.send(moveInfo.msg + 'Where would you like to move?', true);
-                Util.addReactions(moveMessage, moveInfo.icons);
+                this.send(moveInfo.msg + 'Where would you like to move?', moveInfo.icons, true);
                 this.state = 'SELECT_MOVE';
               }
             } else {
@@ -133,8 +130,7 @@ module.exports = class BattleManager {
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
               this.selectedAction = chosen;
               let targets = this.getTargetList(chosen.targets);
-              let questionToAsk = await this.send('Please choose ' + chosen.action.targets.number + ' target' + (chosen.action.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, true);
-              Util.addReactions(questionToAsk, targets.icons);
+              this.send('Please choose ' + chosen.action.targets.number + ' target' + (chosen.action.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
               this.state = 'SELECT_TARGET';
             }
             return 'BATTLING';
@@ -156,7 +152,7 @@ module.exports = class BattleManager {
                   return this.selectedAction.targets[pos - 1];
                 });
 
-                await this.useAbility(this.selectedAction.action, this.characterInFocus, targetChars);
+                this.useAbility(this.selectedAction.action, this.characterInFocus, targetChars);
 
                 // Turn over, move onto next person.
                 return this.performTurn();
@@ -182,7 +178,7 @@ module.exports = class BattleManager {
                 reactionInfo.messageReaction.remove(reactionInfo.user);
               } else {
                 // Attempt a move, do the next turn
-                await this.performMove(this.characterInFocus, directions[0], this.selectedAction.chance);
+                this.performMove(this.characterInFocus, directions[0], this.selectedAction.chance);
                 return this.performTurn();
               }
               return 'BATTLING';
@@ -195,7 +191,7 @@ module.exports = class BattleManager {
               return this.cancelAction('Retreat');
             } else if (reactionInfo.react === '✅') {
               // Running away!
-              await this.performFlee(this.characterInFocus, this.selectedAction.chance);
+              this.performFlee(this.characterInFocus, this.selectedAction.chance);
               return this.performTurn();
             } else {
               return 'BATTLING'; // Nothing to do!
@@ -435,27 +431,27 @@ module.exports = class BattleManager {
     }
   }
 
-  async performFlee (char, fleeChance) {
+  performFlee (char, fleeChance) {
     if (Math.random() <= fleeChance) {
       // Hooray!
-      await this.send(Util.getDisplayName(char) + ' has fled the battle!');
+      this.send(Util.getDisplayName(char) + ' has fled the battle!');
       this.removeFromBattle(char, 'FLED');
     } else {
       // ;~;
-      await this.send(Util.getDisplayName(char) + ' has failed their escape. Stand and deliver!');
+      this.send(Util.getDisplayName(char) + ' has failed their escape. Stand and deliver!');
     }
   }
 
-  async performMove (char, directionIcon, moveChance) {
+  performMove (char, directionIcon, moveChance) {
     let direction = (directionIcon === '⬅' ? 'left' : 'right');
     let successChance = moveChance[direction];
     if (Math.random() <= successChance) {
       // Hooray!
       let newPos = this.movePlayer(char, direction);
-      await this.send('Successfully moved to position ' + newPos + '!');
+      this.send('Successfully moved to position ' + newPos + '!');
     } else {
       // ;~;
-      await this.send('Despite your best effort, your legs fail you.');
+      this.send('Despite your best effort, your legs fail you.');
     }
   }
 
@@ -467,23 +463,20 @@ module.exports = class BattleManager {
     return location.arrayPosition + directionOffset + 1;
   }
 
-  async cancelAction (actionText) {
+  cancelAction (actionText) {
     // Bounce back to action select
-    let questionToAsk = await this.send(`${actionText} has been cancelled. What would you like to do?`, true);
-    Util.addReactions(questionToAsk, this.getIconsForActions(this.actionsForPlayer));
+    this.send(`${actionText} has been cancelled. What would you like to do?`, this.getIconsForActions(this.actionsForPlayer), true);
     this.state = 'SELECT_ABILITY';
     return 'BATTLING';
   }
 
-  async cleanupEffects (caster, charactersToCleanup) {
+  cleanupEffects (caster, charactersToCleanup) {
     let characters = charactersToCleanup;
     if (!characters) {
       let effectiveChars = Util.getEffectiveCharacters(this.battlefield);
       characters = effectiveChars.players.concat(effectiveChars.enemies);
     }
-    for (let i = 0; i < characters.length; i++) {
-      await characters[i].cleanupEffect(caster, this);
-    }
+    characters.forEach(char => char.cleanupEffect(caster, this));
     for (let i = 0; i < this.battlefieldEffects.length; i++) {
       for (let j = this.battlefieldEffects[i].length - 1; j >= 0; j--) {
         // Hmm, this looks familiar ...
@@ -492,12 +485,12 @@ module.exports = class BattleManager {
           if (effect.ticks === effect.currentTicks) {
             // Expire the effect
             if (effect.onRemoveBattlefield) {
-              await effect.onRemoveBattlefield(this, caster);
+              effect.onRemoveBattlefield(this, caster);
             }
             this.battlefieldEffects[i].splice(j, 1);
           } else {
             if (effect.onTickBattlefield) {
-              await effect.onTickBattlefield(this, caster);
+              effect.onTickBattlefield(this, caster);
             }
             effect.currentTicks++;
           }
@@ -506,13 +499,13 @@ module.exports = class BattleManager {
     }
   }
 
-  async useAbility (ability, caster, targets) {
+  useAbility (ability, caster, targets) {
     let effect = Util.clone(ability.effect); // Take copy
     effect.whoApplied = caster;
     if (ability.targets.number === 0) {
       // Battlefield effect, oBA handles the placement (battleManager still does cleanup ? )
       if (effect.onBattlefieldApply) {
-        await effect.onBattlefieldApply(this, caster, targets, ability);
+        effect.onBattlefieldApply(this, caster, targets, ability);
       }
       targets.forEach(target => {
         this.battlefieldEffects[target].push(effect);
@@ -522,10 +515,10 @@ module.exports = class BattleManager {
       for (let i = 0; i < targets.length; i++) {
         let target = targets[i];
         if (effect.onApply) {
-          await effect.onApply(this, caster, target, ability);
+          effect.onApply(this, caster, target, ability);
         }
         if (!target.alive) {
-          await this.send(Util.getDisplayName(target) + ' has been slain!');
+          this.send(Util.getDisplayName(target) + ' has been slain!');
           this.removeFromBattle(target, 'DEAD');
         } else {
           target.effects.push(effect);
@@ -570,7 +563,7 @@ module.exports = class BattleManager {
     return text;
   }
 
-  async send (string, saveId) {
-    return this.gamemanager.send(string, saveId);
+  send (message, reactions, saveId) {
+    return this.gamemanager.send(message, reactions, saveId);
   }
 };

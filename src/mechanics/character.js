@@ -25,14 +25,13 @@ module.exports = class Character {
     this.alive = true;
   }
 
-  async dealDamage (amount, source, battleManager) {
+  dealDamage (amount, source, battleManager) {
     let damageReducers = this.getListeningEffects(battleManager, 'onRecieveDamage');
-    let reducedDamage = amount;
-    for (let i = 0; i < damageReducers.length; i++) {
-      // I would use a reducer here but it's async, need to figure out the pattern for this
-      let newDamage = await damageReducers[i].onRecieveDamage(reducedDamage, this, source);
-      reducedDamage = newDamage < 0 ? 0 : newDamage;
-    }
+    let reducedDamage = damageReducers.reduce((currentDamage, ele) => {
+      let newDamage = ele.onRecieveDamage(currentDamage, this, source);
+      return newDamage < 0 ? 0 : newDamage;
+    }, amount);
+
     if (battleManager) {
       // Do this through gamemanager later
       if (reducedDamage !== amount) {
@@ -47,11 +46,11 @@ module.exports = class Character {
     }
   }
 
-  async cleanupEffect (character, battleManager) {
+  cleanupEffect (character, battleManager) {
     for (let i = 0; i < this.items.length; i++) {
       let item = this.items[i];
       for (let j = item.effects.length - 1; j >= 0; j--) {
-        let toRemove = await this.processEffect(item.effects[j], character, battleManager);
+        let toRemove = this.processEffect(item.effects[j], character, battleManager);
         if (toRemove) {
           item.effects.splice(j, 1);
         }
@@ -59,24 +58,24 @@ module.exports = class Character {
     }
     for (let i = this.effects.length - 1; i >= 0; i--) {
       // Same again
-      let toRemove = await this.processEffect(this.effects[i], character, battleManager);
+      let toRemove = this.processEffect(this.effects[i], character, battleManager);
       if (toRemove) {
         this.effects.splice(i, 1);
       }
     }
   }
 
-  async processEffect (effect, character, battleManager) {
+  processEffect (effect, character, battleManager) {
     if (effect.whoApplied === character) {
       if (effect.ticks === effect.currentTicks) {
         // Expire the effect
         if (effect.onRemove) {
-          await effect.onRemove(battleManager, character, this);
+          effect.onRemove(battleManager, character, this);
         }
         return true;
       } else {
         if (effect.onTick) {
-          await effect.onTick(battleManager, character, this);
+          effect.onTick(battleManager, character, this);
         }
         effect.currentTicks++;
       }

@@ -19,22 +19,22 @@ let creatures = {
         swung: false,
         killed: false
       },
-      async performTurn (battleManager, me) {
+      performTurn (battleManager, me) {
         if (me.currenthp === me.hp) {
-          await battleManager.send('The Dummy gazes at our heroes stoicly, although inside it is deeply troubled. How did he get here? What is his purpose? What is he supposed to do?');
+          battleManager.send('The Dummy gazes at our heroes stoicly, although inside it is deeply troubled. How did he get here? What is his purpose? What is he supposed to do?');
         } else if (!me.logic.state.hurt) {
           me.logic.state.hurt = true;
-          await battleManager.send('The Dummy has emotional wounds far deeper than its external ones. Has it been brought into this world only to suffer? The force of the strike has knocked them back. They prepare a counter.');
+          battleManager.send('The Dummy has emotional wounds far deeper than its external ones. Has it been brought into this world only to suffer? The force of the strike has knocked them back. They prepare a counter.');
         } else if (!me.logic.state.swung) {
           let playersTargetable = battleManager.battlefield[2]; // This should be a real check someday
           if (playersTargetable.length === 0) {
             // They moved out of range!
-            await battleManager.send('The Dummy bounces back and swings into the empty air. In the distance, a sad violin plays.');
+            battleManager.send('The Dummy bounces back and swings into the empty air. In the distance, a sad violin plays.');
           } else {
             // Hit it very hard!
-            await battleManager.send('The Dummy bounces back and swings forward with all of its might.');
+            battleManager.send('The Dummy bounces back and swings forward with all of its might.');
             let char = playersTargetable[0];
-            await battleManager.useAbility(me.abilities[0], me, [char]);
+            battleManager.useAbility(me.abilities[0], me, [char]);
             if (!char.alive) {
               me.logic.state.killed = true;
             }
@@ -42,10 +42,10 @@ let creatures = {
           me.logic.state.swung = true;
         } else {
           if (me.hasEffect('Anxiety')) { // ;(
-            await battleManager.send('The Dummy is overcome. It can\'t take it anymore.');
-            await battleManager.useAbility(me.abilities[0], me, [me]);
+            battleManager.send('The Dummy is overcome. It can\'t take it anymore.');
+            battleManager.useAbility(me.abilities[0], me, [me]);
           } else {
-            await battleManager.send('The Dummy rests, ' + (me.logic.state.killed ? 'bloodied from battle.' : 'exhausted and defeated.') + ' What more is there to do?');
+            battleManager.send('The Dummy rests, ' + (me.logic.state.killed ? 'bloodied from battle.' : 'exhausted and defeated.') + ' What more is there to do?');
           }
         }
       }
@@ -66,13 +66,13 @@ let creatures = {
         undamagedTurns: 0,
         shieldGiven: false
       },
-      async performTurn (battleManager, me) {
+      performTurn (battleManager, me) {
         let turn = battleManager.turn;
         switch (turn - me.logic.state.undamagedTurns) {
           case 1:
-            await battleManager.send('"Hello, welcome to the dungeon! Before you run around adventuring, first you\'ve got to learn the ropes!" *ahem*');
-            await battleManager.useAbility(me.abilities[0], me, [3]);
-            await battleManager.send('"You wouldn\'t believe how long that took to get working. Alright, now, use your sword to hit this Dummy!"');
+            battleManager.send('"Hello, welcome to the dungeon! Before you run around adventuring, first you\'ve got to learn the ropes!" *ahem*');
+            battleManager.useAbility(me.abilities[0], me, [3]);
+            battleManager.send('"You wouldn\'t believe how long that took to get working. Alright, now, use your sword to hit this Dummy!"');
             break;
           case 2:
             let dummy = battleManager.battlefield[3][0];
@@ -80,11 +80,11 @@ let creatures = {
               // Dummy has died somehow, uh oh
             } else if (dummy.currenthp === dummy.hp) {
               me.logic.state.undamagedTurns++;
-              await battleManager.send('"C\'mon guys, you gotta do SOMETHING."');
+              battleManager.send('"C\'mon guys, you gotta do SOMETHING."');
             } else {
-              await battleManager.send('"Very good!" he exclaims. You can tell he is *very impressed*.');
-              await battleManager.useAbility(me.abilities[1], me, Util.getEffectiveCharacters(battleManager.battlefield).players);
-              await battleManager.send('"This shield will protect you from the dummy\'s rage. Try to use it now."');
+              battleManager.send('"Very good!" he exclaims. You can tell he is *very impressed*.');
+              battleManager.useAbility(me.abilities[1], me, Util.getEffectiveCharacters(battleManager.battlefield).players);
+              battleManager.send('"This shield will protect you from the dummy\'s rage. Try to use it now."');
             }
             break;
           default:
@@ -93,13 +93,13 @@ let creatures = {
               // Dummy has died somehow, uh oh
             } else {
               if (fighter.logic.state.swung) {
-                await battleManager.send('"Heh, well then. I have taught you all you need for now. Now to finish this up. Here, catch!"');
-                await battleManager.useAbility(me.abilities[2], me, Util.getEffectiveCharacters(battleManager.battlefield).players);
-                await battleManager.send('"Alright, I best be going now. Take care out there!"');
-                await battleManager.performFlee(me, 1); // This shoud be real at some point also
+                battleManager.send('"Heh, well then. I have taught you all you need for now. Now to finish this up. Here, catch!"');
+                battleManager.useAbility(me.abilities[2], me, Util.getEffectiveCharacters(battleManager.battlefield).players);
+                battleManager.send('"Alright, I best be going now. Take care out there!"');
+                battleManager.performFlee(me, 1); // This shoud be real at some point also
               } else {
-                await battleManager.send('"You\'ll notice that if you blocked, you\'re buffed for 1 turn only. That means if you blocked last turn, you\'ll come out of block now."');
-                await battleManager.send('"I would brace for impact, if I were you." The Old Man winks.');
+                battleManager.send('"You\'ll notice that if you blocked, you\'re buffed for 1 turn only. That means if you blocked last turn, you\'ll come out of block now."');
+                battleManager.send('"I would brace for impact, if I were you." The Old Man winks.');
               }
             }
         }

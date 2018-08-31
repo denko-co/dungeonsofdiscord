@@ -77,14 +77,9 @@ exports.reduceList = function (list) {
   return resultList;
 };
 
-exports.addReactions = function (message, origReactionsArray) {
-  // Take array copy
-  let reactionsArray = origReactionsArray.slice();
-  if (reactionsArray.length === 0) return;
-  let reaction = reactionsArray.shift();
-  message.react(reaction).then(messageReaction => {
-    this.addReactions(messageReaction.message, reactionsArray);
-  });
+exports.addReactions = function (message, reactionsArray) {
+  if (!reactionsArray) return Promise.resolve();
+  return reactionsArray.reduce((prev, reaction) => prev.then(() => message.react(reaction)), Promise.resolve());
 };
 
 exports.getVsText = function (vs) {

@@ -6,29 +6,28 @@ let gameManagers = {};
 
 bot.login(process.env.TOKEN);
 
-bot.on('ready', async function (event) {
+bot.on('ready', function (event) {
   console.log('Logged in as %s - %s\n', bot.user.username, bot.user.id);
   gameManagers[testChannel] = new GameManger(bot, testChannel);
-  await gameManagers[testChannel].initialise();
+  let gameManager = gameManagers[testChannel];
+  gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.initialise());
 });
 
-bot.on('messageReactionAdd', async function (messageReaction, user) {
+bot.on('messageReactionAdd', function (messageReaction, user) {
   let channelId = messageReaction.message.channel.id;
-  if (gameManagers[channelId]) {
+  if (!user.bot && gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];
-    if (!user.bot && messageReaction.message.id === gameManager.messageId) {
-      // console.log(messageReaction.emoji);
-      await gameManager.handleReaction(messageReaction, user);
-    }
+    // console.log(messageReaction.emoji);
+    gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.handleReaction(messageReaction, user));
   }
 });
 
-bot.on('message', async function (message) {
+bot.on('message', function (message) {
   let channelId = message.channel.id;
   if (!message.author.bot && gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];
     if (message.content.charAt(0) === '!') { // Swap this out for prefix later
-      await gameManager.handleMessage(message);
+      gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.handleMessage(message));
     }
   }
 });
