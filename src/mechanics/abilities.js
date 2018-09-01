@@ -72,7 +72,7 @@ let abilities = {
     },
     effect: Effects.getEffect('Anxiety', {}),
     range: 2,
-    icon: '😟'
+    icon: '😰'
   },
   // Creature abilities
   trainingPreparation: {

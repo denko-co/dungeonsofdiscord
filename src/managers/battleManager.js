@@ -368,9 +368,9 @@ module.exports = class BattleManager {
 
     // Can always move (might be blocked by effects but in premise)
     actionList.push({action: Abilities.getAbility('Move'), targets: null});
-    // Can only run away if in position 1 (and even then...)
-    // This should check if they are an enemy, really
-    if (this.getCharacterLocation(char).arrayPosition === 0) {
+    // Can only run away if in position 1, or position 6 for enemies (and even then...)
+    let charPos = this.getCharacterLocation(char).arrayPosition;
+    if ((charPos === 0 && char.owner) || (charPos === 5 && !char.owner)) {
       actionList.push({action: Abilities.getAbility('Flee'), targets: null});
     }
     // Can always pass
