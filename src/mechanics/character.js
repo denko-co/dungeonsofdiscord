@@ -108,7 +108,8 @@ module.exports = class Character {
   }
 
   getCharacterDetails (battleManager) {
-    let text = '*Details for ' + Util.getDisplayName(this) + '* (' + this.currenthp + '/' + this.hp + ' hp)\n';
+    let text = '*Details for ' + Util.getDisplayName(this) + '* ';
+    text += (this.alive ? '(' + this.currenthp + '/' + this.hp + ' hp)' : '(dead ;~;)') + '\n';
     text += '*Abilities:* ' + (this.abilities.length === 0 ? '-' : '') + '\n';
     this.abilities.forEach(ability => {
       text += ability.getAbilityDetails() + '\n';
