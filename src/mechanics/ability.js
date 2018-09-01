@@ -23,8 +23,14 @@ module.exports = class Ability {
     let info = '';
     if (this.cooldown) info += this.cooldown + ' cd';
     if (this.maxUses) {
-      if (this.maxUses.game) info += (info === '' ? '' : ', ') + this.maxUses.game + 'uses, ' + this.uses.game + ' remaining';
-      if (this.maxUses.battle) info += (info === '' ? '' : ', ') + this.maxUses.game + 'uses per battle, ' + this.uses.battle + ' remaining';
+      if (this.maxUses.game) {
+        info += (info === '' ? '' : ', ') + this.maxUses.game + ' use' +
+        (this.maxUses.game === 1 ? '' : 's') + ', ' + (this.maxUses.game - this.uses.game) + ' remaining';
+      }
+      if (this.maxUses.battle) {
+        info += (info === '' ? '' : ', ') + this.maxUses.battle + ' use' +
+        (this.maxUses.battle === 1 ? '' : 's') + ' per battle, ' + (this.maxUses.battle - this.uses.battle) + ' remaining';
+      }
     }
     if (this.targets) info += (info === '' ? '' : ', ') + this.targets.number + ' target' + (this.targets.number === 1 ? '' : 's');
     if (this.range) info += (info === '' ? '' : ', ') + this.range + ' range';

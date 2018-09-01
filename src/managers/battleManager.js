@@ -74,7 +74,7 @@ module.exports = class BattleManager {
         return 'BATTLING';
       } else {
         // NPC, evaluate and tick (no interrupts).
-        character.logic.performTurn(this, character); // I don't know anyone I am
+        character.logic.performTurn(this); // I don't know anyone I am
         // Let's go again!
         return this.performTurn();
       }
@@ -152,8 +152,17 @@ module.exports = class BattleManager {
                   return this.selectedAction.targets[pos - 1];
                 });
 
-                this.useAbility(this.selectedAction.action, this.characterInFocus, targetChars);
+                let item = this.selectedAction.item;
+                let ability = this.selectedAction.action;
+                if (item && item.onUse.before) {
+                  item.onUse.before(ability, this);
+                }
 
+                this.useAbility(ability, this.characterInFocus, targetChars);
+
+                if (item && item.onUse.after) {
+                  item.onUse.after(ability, this);
+                }
                 // Turn over, move onto next person.
                 return this.performTurn();
               }
@@ -352,29 +361,29 @@ module.exports = class BattleManager {
 
   getValidActions (char) {
     let actionList = [];
-    let abilitiesToCheck = char.abilities;
+    let abilitiesToCheck = char.abilities.map(abil => { return {ability: abil, item: null}; });
 
     char.items.forEach(item => {
-      abilitiesToCheck = abilitiesToCheck.concat(item.abilities);
+      abilitiesToCheck = abilitiesToCheck.concat(item.abilities.map(abil => { return {ability: abil, item: item}; }));
     });
 
-    abilitiesToCheck.forEach(ability => {
+    abilitiesToCheck.forEach(abilityObj => {
       // Check if the ability can target something. If it's not null, add it to the pool
-      let targets = this.getValidTargets(char, ability);
+      let targets = this.getValidTargets(char, abilityObj.ability);
       if (targets && targets.length !== 0) {
-        actionList.push({action: ability, targets: targets});
+        actionList.push({action: abilityObj.ability, item: abilityObj.item, targets: targets});
       }
     });
 
     // Can always move (might be blocked by effects but in premise)
-    actionList.push({action: Abilities.getAbility('Move'), targets: null});
+    actionList.push({action: Abilities.getAbility('Move'), item: null, targets: null});
     // Can only run away if in position 1, or position 6 for enemies (and even then...)
     let charPos = this.getCharacterLocation(char).arrayPosition;
     if ((charPos === 0 && char.owner) || (charPos === 5 && !char.owner)) {
-      actionList.push({action: Abilities.getAbility('Flee'), targets: null});
+      actionList.push({action: Abilities.getAbility('Flee'), item: null, targets: null});
     }
     // Can always pass
-    actionList.push({action: Abilities.getAbility('Pass'), targets: null});
+    actionList.push({action: Abilities.getAbility('Pass'), item: null, targets: null});
     return actionList;
   }
 
@@ -525,6 +534,9 @@ module.exports = class BattleManager {
         }
       }
     }
+    // Now that we have used the ability, bump its uses
+    ability.uses.game++;
+    ability.uses.battle++;
   }
 
   getBattlefield () {

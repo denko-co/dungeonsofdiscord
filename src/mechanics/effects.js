@@ -77,6 +77,7 @@ let effects = {
       onApply (battleManager, caster, target, ability) {
         for (let i = 0; i < this.toGive.length; i++) {
           let newItem = Items.getItem(this.toGive[i]);
+          newItem.owner = target;
           target.items.push(newItem);
           battleManager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.name + '**: *' + newItem.flavour + '*');
         }

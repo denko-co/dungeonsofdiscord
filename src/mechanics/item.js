@@ -5,7 +5,8 @@ module.exports = class Item {
     this.flavour = flavour;
     this.abilities = abilities || [];
     this.effects = effects || [];
-    this.onUse = onUse;
+    this.onUse = onUse || {};
+    this.owner = null;
   }
 
   getItemDetails () {

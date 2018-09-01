@@ -26,7 +26,21 @@ let items = {
     flavour: 'It rattles, like it\'s nervous.',
     abilityNames: [
       'Make Worried'
-    ]
+    ],
+    onUse: {
+      before (ability, battleManager) {
+        if (ability.maxUses.game - 1 === ability.uses.game) {
+          // It will pop now, print the use text
+          battleManager.send('The bottle detonates on contact, releasing the fluid and BAD VIBES.');
+        }
+      },
+      after (ability, battleManager) {
+        if (ability.maxUses.game === ability.uses.game) {
+          // Remove bottle from inventory
+          this.owner.items.splice(this.owner.items.indexOf(this), 1);
+        }
+      }
+    }
   }
 };
 
@@ -42,5 +56,7 @@ exports.getItem = function (name) {
     }
   }
   let itemToAdd = new Item(itemDetails.name, itemDetails.description, itemDetails.flavour, abilities, itemDetails.effects, itemDetails.onUse);
+  if (itemToAdd.onUse.before) itemToAdd.onUse.before = itemToAdd.onUse.before.bind(itemToAdd);
+  if (itemToAdd.onUse.after) itemToAdd.onUse.after = itemToAdd.onUse.after.bind(itemToAdd);
   return itemToAdd;
 };

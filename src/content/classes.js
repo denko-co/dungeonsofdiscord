@@ -41,5 +41,8 @@ exports.getClass = function (name, playerId) {
 
   let classToAdd = new Character(classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, items, classDetails.effects);
   classToAdd.owner = playerId;
+  classToAdd.items.forEach(item => {
+    item.owner = classToAdd;
+  });
   return classToAdd;
 };

@@ -70,6 +70,9 @@ let abilities = {
       number: 1,
       type: 'ENEMY'
     },
+    maxUses: {
+      game: 1
+    },
     effect: Effects.getEffect('Anxiety', {}),
     range: 2,
     icon: '😰'
