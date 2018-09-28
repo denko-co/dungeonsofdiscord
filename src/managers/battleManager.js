@@ -1,5 +1,5 @@
 const Util = require('../util/util.js');
-const Abilities = require('../mechanics/abilities.js');
+const Abilities = require('../content/abilities.js');
 const _ = require('underscore');
 
 module.exports = class BattleManager {

@@ -1,13 +1,13 @@
-const Abilities = require('../mechanics/abilities.js');
+const Abilities = require('./abilities.js');
 const Character = require('../mechanics/character.js');
-const Items = require('../mechanics/items.js');
+const Items = require('./items.js');
 const Util = require('../util/util.js');
 
 // Define all classes (instances as players, stored elsewhere...)
 
 let classes = {
   matyr: {
-    name: 'Matyr',
+    name: 'Martyr',
     description: 'Get it, they give their life for others?',
     hp: 15,
     itemNames: [

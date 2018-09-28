@@ -1,4 +1,4 @@
-const Abilities = require('../mechanics/abilities.js');
+const Abilities = require('./abilities.js');
 const Character = require('../mechanics/character.js');
 const Util = require('../util/util.js');
 
