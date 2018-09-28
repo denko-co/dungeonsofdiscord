@@ -27,7 +27,7 @@ let encounters = {
   }
 };
 
-exports.getEncounter = function (name) {
+exports.getEncounter = function (name, displayName) {
   let encounterDetails = encounters[Util.convertName(name)];
   if (!encounterDetails) {
     throw new Error(`Encounter with name ${name} not found!`);
@@ -41,6 +41,6 @@ exports.getEncounter = function (name) {
 
   // Put rewards here when we decide how to do drops
 
-  let encounterToAdd = new Encounter(encounterDetails.name, encounterDetails.description, encounterDetails.positions, encounterDetails.effects, encounterDetails.rewards);
+  let encounterToAdd = new Encounter(encounterDetails.name, displayName || encounterDetails.name, encounterDetails.description, encounterDetails.positions, encounterDetails.effects, encounterDetails.rewards);
   return encounterToAdd;
 };

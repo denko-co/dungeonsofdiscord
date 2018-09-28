@@ -16,7 +16,7 @@ let classes = {
   }
 };
 
-exports.getClass = function (name, playerId) {
+exports.getClass = function (name, playerId, displayName) {
   if (!playerId) {
     throw new Error(`Need to specify a player for this class!`);
   }
@@ -39,7 +39,7 @@ exports.getClass = function (name, playerId) {
     }
   }
 
-  let classToAdd = new Character(classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, items, classDetails.effects);
+  let classToAdd = new Character(classDetails.name, displayName || classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, items, classDetails.effects);
   classToAdd.owner = playerId;
   classToAdd.items.forEach(item => {
     item.owner = classToAdd;

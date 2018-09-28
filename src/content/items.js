@@ -44,7 +44,7 @@ let items = {
   }
 };
 
-exports.getItem = function (name) {
+exports.getItem = function (name, displayName) {
   let itemDetails = items[Util.convertName(name)];
   if (!itemDetails) {
     throw new Error(`Item with name ${name} not found!`);
@@ -55,7 +55,7 @@ exports.getItem = function (name) {
       abilities.push(Abilities.getAbility(itemDetails.abilityNames[i]));
     }
   }
-  let itemToAdd = new Item(itemDetails.name, itemDetails.description, itemDetails.flavour, abilities, itemDetails.effects, itemDetails.onUse);
+  let itemToAdd = new Item(itemDetails.name, displayName || itemDetails.name, itemDetails.description, itemDetails.flavour, abilities, itemDetails.effects, itemDetails.onUse);
   if (itemToAdd.onUse.before) itemToAdd.onUse.before = itemToAdd.onUse.before.bind(itemToAdd);
   if (itemToAdd.onUse.after) itemToAdd.onUse.after = itemToAdd.onUse.after.bind(itemToAdd);
   return itemToAdd;

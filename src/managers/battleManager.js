@@ -22,7 +22,7 @@ module.exports = class BattleManager {
 
   initialise () {
     this.send(`*${Util.getBattleReadyText()}*`);
-    this.send(Util.getVsText(this.encounter.name));
+    this.send(Util.getVsText(this.encounter.displayName));
     this.send(`***${Util.getBattleStartText()}***`);
     return this.performTurn();
   }
@@ -286,7 +286,7 @@ module.exports = class BattleManager {
   getFleeChance (char) {
     let msg = '';
     let fleeEffects = char.getListeningEffects(this, 'onFleeAttempt');
-    let fleeEffectNames = fleeEffects.map(ele => ele.name);
+    let fleeEffectNames = fleeEffects.map(ele => ele.displayName);
     let chance = fleeEffects.reduce((currentChance, ele) => {
       return currentChance * ele.onFleeAttempt(char, this);
     }, 1);
@@ -309,7 +309,7 @@ module.exports = class BattleManager {
     // Check if able to move
     let moveLeftEffects = char.getListeningEffects(this, 'onMoveBackwardAttempt');
     let moveLeftDetails = {
-      effectsTriggered: moveLeftEffects.map(ele => ele.name),
+      effectsTriggered: moveLeftEffects.map(ele => ele.displayName),
       chance: moveLeftEffects.reduce((currentChance, ele) => {
         return currentChance * ele.onMoveBackwardAttempt(char, this);
       }, 1),
@@ -320,7 +320,7 @@ module.exports = class BattleManager {
     };
     let moveRightEffects = char.getListeningEffects(this, 'onMoveForwardAttempt');
     let moveRightDetails = {
-      effectsTriggered: moveRightEffects.map(ele => ele.name),
+      effectsTriggered: moveRightEffects.map(ele => ele.displayName),
       chance: moveRightEffects.reduce((currentChance, ele) => {
         return currentChance * ele.onMoveForwardAttempt(char, this);
       }, 1),
@@ -566,7 +566,7 @@ module.exports = class BattleManager {
       if (arr.length === 0) text += no;
       else {
         let people = arr.map(char => {
-          return (char.owner ? Util.getMention(char.owner) : char.name);
+          return (char.owner ? Util.getMention(char.owner) : char.displayName);
         });
         text += Util.capitalise(Util.formattedList(Util.reduceList(people)));
       }

@@ -1,6 +1,7 @@
 module.exports = class Ability {
-  constructor (name, description, flavour, type, effect, cooldown, maxUses, targets, range, icon) {
+  constructor (name, displayName, description, flavour, type, effect, cooldown, maxUses, targets, range, icon) {
     this.name = name;
+    this.displayName = displayName;
     this.description = description;
     this.flavour = flavour;
     this.type = type;
@@ -19,7 +20,7 @@ module.exports = class Ability {
   }
 
   getAbilityDetails () {
-    let text = this.icon + ' **' + this.name + '**' + ' ' + this.description + ' ';
+    let text = this.icon + ' **' + this.displayName + '**' + ' ' + this.description + ' ';
     let info = '';
     if (this.cooldown) info += this.cooldown + ' cd';
     if (this.maxUses) {

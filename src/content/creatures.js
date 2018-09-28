@@ -108,7 +108,7 @@ let creatures = {
   }
 };
 
-exports.getCreature = function (name) {
+exports.getCreature = function (name, displayName) {
   let creatureDetails = creatures[Util.convertName(name)];
   if (!creatureDetails) {
     throw new Error(`Creature with name ${name} not found!`);
@@ -122,7 +122,7 @@ exports.getCreature = function (name) {
       abilities.push(Abilities.getAbility(creatureDetails.abilityNames[i]));
     }
   }
-  let creatureToAdd = new Character(creatureDetails.name, creatureDetails.description, 'CREATURE', creatureDetails.hp, creatureDetails.speed, creatureDetails.logic, abilities, creatureDetails.items, creatureDetails.effects);
+  let creatureToAdd = new Character(creatureDetails.name, displayName || creatureDetails.name, creatureDetails.description, 'CREATURE', creatureDetails.hp, creatureDetails.speed, creatureDetails.logic, abilities, creatureDetails.items, creatureDetails.effects);
   creatureToAdd.logic.performTurn = creatureToAdd.logic.performTurn.bind(creatureToAdd);
   return creatureToAdd;
 };

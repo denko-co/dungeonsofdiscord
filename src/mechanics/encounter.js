@@ -1,7 +1,8 @@
 module.exports = class Encounter {
   // For running events
-  constructor (name, description, positions, effects, rewards) {
+  constructor (name, displayName, description, positions, effects, rewards) {
     this.name = name;
+    this.displayName = displayName;
     this.description = description;
     this.positions = [];
     this.positions.push(positions.position1 || []);

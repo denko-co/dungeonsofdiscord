@@ -31,6 +31,7 @@ let effects = {
     },
     properties: {
       onRecieveDamage (dmg, target, source) {
+        // Use real name to correctly identify type
         return this.creatures.includes(source.name) ? 0 : this.baseReduce(dmg);
       }
     }
@@ -57,7 +58,7 @@ let effects = {
         for (let i = 0; i < locationsArray.length; i++) {
           let monsterToSummon = Creatures.getCreature(this.toSummon[currentSummon]);
           battleManager.battlefield[locationsArray[i]].push(monsterToSummon);
-          summonedNames.push(monsterToSummon.name);
+          summonedNames.push(monsterToSummon.displayName);
           currentSummon = currentSummon + 1 === this.toSummon.length ? 0 : currentSummon + 1;
         }
         var reducedList = Util.reduceList(summonedNames);
@@ -79,7 +80,7 @@ let effects = {
           let newItem = Items.getItem(this.toGive[i]);
           newItem.owner = target;
           target.items.push(newItem);
-          battleManager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.name + '**: *' + newItem.flavour + '*');
+          battleManager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.displayName + '**: *' + newItem.flavour + '*');
         }
       }
     }
@@ -108,12 +109,12 @@ let effects = {
   }
 };
 
-exports.getEffect = function (name, requiredParams) {
+exports.getEffect = function (name, requiredParams, displayName) {
   let effectDetails = effects[Util.convertName(name)];
   if (!effectDetails) {
     throw new Error(`Effect with name ${name} not found!`);
   }
-  let effectToAdd = new Effect(effectDetails.name, effectDetails.description, effectDetails.flavour, 'ticks' in effectDetails ? effectDetails.ticks : 0, effectDetails.required, effectDetails.properties);
+  let effectToAdd = new Effect(effectDetails.name, displayName || effectDetails.name, effectDetails.description, effectDetails.flavour, 'ticks' in effectDetails ? effectDetails.ticks : 0, effectDetails.required, effectDetails.properties);
 
   for (let effectReq in effectToAdd.required) {
     if (!requiredParams[effectReq]) {

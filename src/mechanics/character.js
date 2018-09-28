@@ -2,8 +2,9 @@ const Util = require('../util/util.js');
 
 module.exports = class Character {
   // constructor for characters (players, enemies)
-  constructor (name, description, type, hp, speed, logic, abilities, items, effects) {
+  constructor (name, displayName, description, type, hp, speed, logic, abilities, items, effects) {
     this.name = name;
+    this.displayName = displayName;
     this.description = description;
     this.type = type;
     this.hp = hp;
@@ -35,7 +36,7 @@ module.exports = class Character {
     if (battleManager) {
       // Do this through gamemanager later
       if (reducedDamage !== amount) {
-        battleManager.send('However, ' + Util.formattedList(damageReducers.map(ele => ele.name)) + ' ' +
+        battleManager.send('However, ' + Util.formattedList(damageReducers.map(ele => ele.displayName)) + ' ' +
             (damageReducers.length === 1 ? 'has ' : 'have ') + 'reduced this to ' + reducedDamage + '.');
       }
     }
@@ -86,6 +87,7 @@ module.exports = class Character {
   hasEffect (effectName, battleManager) {
     let effects = this.getAllEffects(battleManager);
     for (let i = 0; i < effects.length; i++) {
+      // Use real name to correctly identify effect
       if (effects[i].name === effectName) return true;
     }
     return false;

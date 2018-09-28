@@ -1,6 +1,7 @@
 module.exports = class Item {
-  constructor (name, description, flavour, abilities, effects, onUse) {
+  constructor (name, displayName, description, flavour, abilities, effects, onUse) {
     this.name = name;
+    this.displayName = displayName;
     this.description = description;
     this.flavour = flavour;
     this.abilities = abilities || [];
@@ -10,8 +11,8 @@ module.exports = class Item {
   }
 
   getItemDetails () {
-    let text = '**' + this.name + '**' + ' ' + this.description + '\n';
-    text += '*' + this.name + ' abilities:* ';
+    let text = '**' + this.displayName + '**' + ' ' + this.description + '\n';
+    text += '*' + this.displayName + ' abilities:* ';
 
     text += this.abilities.length === 0 ? '-' : '\n';
 
@@ -19,7 +20,7 @@ module.exports = class Item {
       text += ability.getAbilityDetails() + '\n';
     });
     if (this.effects.length !== 0) {
-      text += '*' + this.name + 'effects:* \n';
+      text += '*' + this.displayName + 'effects:* \n';
       this.effects.forEach(effect => {
         text += effect.getEffectDetails() + '\n';
       });

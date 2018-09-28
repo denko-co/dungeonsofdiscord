@@ -123,11 +123,11 @@ let abilities = {
   }
 };
 
-exports.getAbility = function (name) {
+exports.getAbility = function (name, displayName) {
   let abilityDetails = abilities[Util.convertName(name)];
   if (!abilityDetails) {
     throw new Error(`Ability with name ${name} not found!`);
   }
-  let abilityToAdd = new Ability(abilityDetails.name, abilityDetails.description, abilityDetails.flavour, abilityDetails.type, abilityDetails.effect, abilityDetails.cooldown, abilityDetails.maxUses, abilityDetails.targets, abilityDetails.range, abilityDetails.icon);
+  let abilityToAdd = new Ability(abilityDetails.name, displayName || abilityDetails.name, abilityDetails.description, abilityDetails.flavour, abilityDetails.type, abilityDetails.effect, abilityDetails.cooldown, abilityDetails.maxUses, abilityDetails.targets, abilityDetails.range, abilityDetails.icon);
   return abilityToAdd;
 };

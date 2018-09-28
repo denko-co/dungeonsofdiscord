@@ -1,8 +1,9 @@
 const Util = require('../util/util.js');
 
 module.exports = class Effect {
-  constructor (name, description, flavour, ticks, required, bindings) {
+  constructor (name, displayName, description, flavour, ticks, required, bindings) {
     this.name = name;
+    this.displayName = displayName;
     this.description = description;
     this.flavour = flavour;
     this.ticks = ticks;
@@ -21,7 +22,7 @@ module.exports = class Effect {
   }
 
   getEffectDetails () {
-    let text = '**' + this.name + '**' + ' ' + this.description + ' ';
+    let text = '**' + this.displayName + '**' + ' ' + this.description + ' ';
     let info = '(';
     if (this.ticks === null) {
       info += 'permanent effect';
