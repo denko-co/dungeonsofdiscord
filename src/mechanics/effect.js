@@ -11,7 +11,7 @@ module.exports = class Effect {
     this.currentTicks = 0;
     this.whoApplied = null;
 
-    this.required = required;
+    this.required = required || {};
     for (let bind in bindings) {
       // should validate against list of valid effect bindings
       // maybe I should use the word bindings less

@@ -9,6 +9,6 @@ module.exports = class Interactable {
     // If you can use items, a list called interactionItems with names, and onInteract()
     // Some description of the interactable in onInspect()
     this.logic = logic;
-    this.required = required;
+    this.required = required || {};
   }
 };

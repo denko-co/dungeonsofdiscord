@@ -3,7 +3,7 @@ const _ = require('underscore');
 
 exports.convertName = function (name) {
   // Algorithms xd
-  let shortened = name.replace(/\s+/g, '');
+  let shortened = name.replace(/\W+/g, '');
   return uncapitalise(shortened);
 };
 
@@ -139,4 +139,30 @@ exports.getEmojiNumbersAsInts = function (array) {
 exports.clone = function (orig) {
   // Blame https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
   return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
+};
+
+exports.verifyRequired = function (baseRequired, providedRequired, attachTo) {
+  for (let baseReq in baseRequired) {
+    if (!providedRequired[baseReq]) {
+      throw new Error(`${baseReq} is missing, and is required!`);
+    }
+  }
+
+  for (let requiredParam in providedRequired) {
+    let param = providedRequired[requiredParam];
+    let baseReq = baseRequired[requiredParam];
+    if (!baseReq) {
+      throw new Error(`owo, what's this? ${requiredParam} is not a required parameter!`);
+    }
+    if (baseReq === 'array') {
+      if (!Array.isArray(param)) {
+        throw new Error(`Provided required param ${requiredParam} should be array, but isn't`);
+      }
+    } else if (typeof param !== baseReq) { // eslint-disable-line valid-typeof
+      throw new Error(`Provided required param ${requiredParam} is not of correct type, expected ${baseReq}, got ${typeof param}`);
+    }
+
+    // Ready to rumble!
+    attachTo[requiredParam] = param;
+  }
 };

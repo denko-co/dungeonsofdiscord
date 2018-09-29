@@ -1,5 +1,5 @@
 const Encounter = require('../mechanics/encounter.js');
-const Creatures = require('../content/creatures.js');
+const Creatures = require('./creatures.js');
 const Effects = require('./effects.js');
 const Util = require('../util/util.js');
 

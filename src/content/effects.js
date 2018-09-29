@@ -1,5 +1,5 @@
 const Effect = require('../mechanics/effect.js');
-const Creatures = require('../content/creatures.js');
+const Creatures = require('./creatures.js');
 const Items = require('./items.js');
 const Util = require('../util/util.js');
 
@@ -116,29 +116,7 @@ exports.getEffect = function (name, requiredParams, displayName) {
   }
   let effectToAdd = new Effect(effectDetails.name, displayName || effectDetails.name, effectDetails.description, effectDetails.flavour, 'ticks' in effectDetails ? effectDetails.ticks : 0, effectDetails.required, effectDetails.properties);
 
-  for (let effectReq in effectToAdd.required) {
-    if (!requiredParams[effectReq]) {
-      throw new Error(`${effectReq} is missing, and is required!`);
-    }
-  }
-
-  for (let requiredParam in requiredParams) {
-    let param = requiredParams[requiredParam];
-    let effectReq = effectToAdd.required[requiredParam];
-    if (!effectReq) {
-      throw new Error(`owo, what's this? ${requiredParam} is not a required parameter for the effect ${name}!`);
-    }
-    if (effectReq === 'array') {
-      if (!Array.isArray(param)) {
-        throw new Error(`Provided required param ${requiredParam} should be array, but isn't`);
-      }
-    } else if (typeof param !== effectReq) { // eslint-disable-line valid-typeof
-      throw new Error(`Provided required param ${requiredParam} is not of correct type, expected ${effectReq}, got ${typeof param}`);
-    }
-
-    // Ready to rumble!
-    effectToAdd[requiredParam] = param;
-  }
+  Util.verifyRequired(effectToAdd.required, requiredParams, effectToAdd);
 
   // return2sender
   return effectToAdd;
