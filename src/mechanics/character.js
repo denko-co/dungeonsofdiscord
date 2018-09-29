@@ -12,9 +12,12 @@ module.exports = class Character {
 
     this.speed = speed || 'NORMAL';
 
-    if (logic && !logic['performTurn']) {
-      throw new Error('Don\'t supply logic without a performTurn method!');
-    }
+    // Logic typically has the following:
+    // Some state stored in state
+    // Some turn logic in performTurn()
+    // Some conversation tree in onTalk()
+    // If you can use items, a list called interactionItems with names, and onInteract()
+    // Some description of the person in onInspect()
     this.logic = logic;
 
     this.abilities = abilities || [];

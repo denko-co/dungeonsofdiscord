@@ -1,5 +1,5 @@
 const _ = require('underscore');
-const Ability = require('./ability.js');
+const Ability = require('../mechanics/ability.js');
 const Effects = require('./effects.js');
 const Util = require('../util/util.js');
 

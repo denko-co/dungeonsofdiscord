@@ -1,4 +1,4 @@
-const Effect = require('./effect.js');
+const Effect = require('../mechanics/effect.js');
 const Creatures = require('../content/creatures.js');
 const Items = require('./items.js');
 const Util = require('../util/util.js');

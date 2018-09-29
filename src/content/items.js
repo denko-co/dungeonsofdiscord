@@ -1,5 +1,5 @@
 const Abilities = require('./abilities.js');
-const Item = require('./item.js');
+const Item = require('../mechanics/item.js');
 const Util = require('../util/util.js');
 
 // Define all items
