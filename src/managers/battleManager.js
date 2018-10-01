@@ -28,6 +28,7 @@ module.exports = class BattleManager {
   }
 
   performTurn (reactionInfo) {
+    // If this method returns true, the battle is complete
     if (!reactionInfo) {
       let effective = Util.getEffectiveCharacters(this.battlefield);
       // performTurn called not off an action, perform a game turn tick
@@ -86,7 +87,7 @@ module.exports = class BattleManager {
           case 'SELECT_ABILITY':
             if (reactionInfo.react !== '✅') return 'BATTLING'; // Nothing to do!
             // Let's confirm their actions ...
-            let options = this.getSelectedOptions(reactions, this.getIconsForActions(this.actionsForPlayer, true), reactionInfo.user.id);
+            let options = Util.getSelectedOptions(reactions, this.getIconsForActions(this.actionsForPlayer, true), reactionInfo.user.id);
             if (options.length === 0) {
               // No option provided!
               this.send('Please select an ability to cast! To pass, press 🤷');
@@ -140,7 +141,7 @@ module.exports = class BattleManager {
               return this.cancelAction('Targeting');
             } else if (reactionInfo.react === '✅') {
               // Let's go get the targets...
-              let targets = this.getSelectedOptions(reactions, this.getTargetList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
+              let targets = Util.getSelectedOptions(reactions, this.getTargetList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
               targets = Util.getEmojiNumbersAsInts(targets);
               if (targets.length > this.selectedAction.action.targets.number || targets.length === 0) {
                 // Not enough / too many targets
@@ -176,7 +177,7 @@ module.exports = class BattleManager {
               return this.cancelAction('Movement');
             } else if (reactionInfo.react === '✅') {
               // Which way are you going?
-              let directions = this.getSelectedOptions(reactions, _.without(this.selectedAction.icons, '🚫', '✅'), reactionInfo.user.id);
+              let directions = Util.getSelectedOptions(reactions, _.without(this.selectedAction.icons, '🚫', '✅'), reactionInfo.user.id);
               if (directions.length > 1) {
                 // Trying to move two ways at once
                 this.send('If you move in many directions at once, do you really move anywhere? Maybe, I failed my physics class.');
@@ -210,20 +211,6 @@ module.exports = class BattleManager {
         return 'BATTLING'; // Even less to do!
       }
     }
-  }
-
-  getSelectedOptions (reactions, validIcons, userId) {
-    let options = [];
-    reactions.forEach((react, icon) => {
-      if (validIcons.includes(icon)) {
-        react.users.forEach(user => {
-          if (user.id === userId) {
-            options.push(icon);
-          }
-        });
-      }
-    });
-    return options;
   }
 
   prepareQueue (players, enemies) {

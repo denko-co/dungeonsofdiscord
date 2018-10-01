@@ -166,3 +166,17 @@ exports.verifyRequired = function (baseRequired, providedRequired, attachTo) {
     attachTo[requiredParam] = param;
   }
 };
+
+exports.getSelectedOptions = function (reactions, validIcons, userId) {
+  let options = [];
+  reactions.forEach((react, icon) => {
+    if (validIcons.includes(icon)) {
+      react.users.forEach(user => {
+        if (user.id === userId) {
+          options.push(icon);
+        }
+      });
+    }
+  });
+  return options;
+};

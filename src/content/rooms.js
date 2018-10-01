@@ -13,9 +13,9 @@ let rooms = {
     },
     onEnter (gameManager) {
       if (this.visited) {
-        gameManager.send('Welcome to Camp Kiki!');
-      } else {
         gameManager.send('Camp entered.');
+      } else {
+        gameManager.send('Welcome to Camp Kiki!');
       }
     },
     onExit (gameManager) {
@@ -23,7 +23,7 @@ let rooms = {
     },
     build () {
       const door = Interactables.getInteractable('Dungeon Door', {direction: 'right'});
-      const lever = Interactables.getInteractable('Dungeon Door', {door: door});
+      const lever = Interactables.getInteractable('Dungeon Lever', {door: door});
       return [Creatures.getCreature('Old Man'), door, lever];
     }
   },
