@@ -28,7 +28,7 @@ module.exports = class BattleManager {
   }
 
   performTurn (reactionInfo) {
-    // If this method returns true, the battle is complete
+    // If this method returns true, the battle is complete (need to code this...)
     if (!reactionInfo) {
       let effective = Util.getEffectiveCharacters(this.battlefield);
       // performTurn called not off an action, perform a game turn tick
@@ -49,7 +49,7 @@ module.exports = class BattleManager {
       }
 
       if (this.queue.length === 0) {
-        this.queue = this.prepareQueue(effective.players, effective.enemies);
+        this.queue = Util.prepareQueue(effective.players, effective.enemies);
 
         // Take this opportunity to cleanup for dead/fled people
         for (let i = 0; i < this.graveyard.length; i++) {
@@ -130,7 +130,7 @@ module.exports = class BattleManager {
               // Option selected, slam it
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
               this.selectedAction = chosen;
-              let targets = this.getTargetList(chosen.targets);
+              let targets = Util.getNumberedList(chosen.targets);
               this.send('Please choose ' + chosen.action.targets.number + ' target' + (chosen.action.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
               this.state = 'SELECT_TARGET';
             }
@@ -141,7 +141,7 @@ module.exports = class BattleManager {
               return this.cancelAction('Targeting');
             } else if (reactionInfo.react === '✅') {
               // Let's go get the targets...
-              let targets = Util.getSelectedOptions(reactions, this.getTargetList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
+              let targets = Util.getSelectedOptions(reactions, Util.getNumberedList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
               targets = Util.getEmojiNumbersAsInts(targets);
               if (targets.length > this.selectedAction.action.targets.number || targets.length === 0) {
                 // Not enough / too many targets
@@ -213,34 +213,6 @@ module.exports = class BattleManager {
     }
   }
 
-  prepareQueue (players, enemies) {
-    let slow = [];
-    let normal = [];
-    let fast = [];
-    let arrays = [players, enemies];
-    arrays.forEach(arr => {
-      arr.forEach(character => {
-        let arr;
-        switch (character.speed) {
-          case 'FAST':
-            arr = fast;
-            break;
-          case 'NORMAL':
-            arr = normal;
-            break;
-          case 'SLOW':
-            arr = slow;
-            break;
-          default:
-            throw new Error('Unrecognised speed! Uh oh!');
-        }
-        arr.push(character);
-      });
-    });
-    let queue = (_.shuffle(fast)).concat(_.shuffle(normal)).concat(_.shuffle(slow));
-    return queue;
-  }
-
   getAbilityByIcon (actionList, icon) {
     return actionList.find(actionItem => {
       return actionItem.action.icon === icon;
@@ -255,19 +227,6 @@ module.exports = class BattleManager {
       icons.push('✅');
     }
     return icons;
-  }
-
-  getTargetList (targetList, onlyIcons) {
-    let numbers = Util.getNumbersAsEmoji();
-    let targetString = '';
-    for (let i = 0; i < targetList.length; i++) {
-      targetString += numbers[i] + ' - ' + Util.getDisplayName(targetList[i]) + '\n';
-    }
-    let targetIcons = numbers.slice(0, targetList.length);
-    if (!onlyIcons) {
-      targetIcons.push('✅', '🚫');
-    }
-    return {msg: targetString, icons: targetIcons};
   }
 
   getFleeChance (char) {

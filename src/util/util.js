@@ -180,3 +180,56 @@ exports.getSelectedOptions = function (reactions, validIcons, userId) {
   });
   return options;
 };
+
+exports.prepareQueue = function (players, enemies) {
+  let slowest = [];
+  let slow = [];
+  let normal = [];
+  let fast = [];
+  let fastest = [];
+  let arrays = [players, enemies || []];
+  arrays.forEach(arr => {
+    arr.forEach(character => {
+      let arr;
+      switch (character.speed) {
+        case 'FASTEST':
+          arr = fastest;
+          break;
+        case 'FAST':
+          arr = fast;
+          break;
+        case 'NORMAL':
+          arr = normal;
+          break;
+        case 'SLOW':
+          arr = slow;
+          break;
+        case 'SLOWEST':
+          arr = slowest;
+          break;
+        default:
+          throw new Error('Unrecognised speed! Uh oh!');
+      }
+      arr.push(character);
+    });
+  });
+  let queue = (_.shuffle(fastest))
+    .concat(_.shuffle(fast))
+    .concat(_.shuffle(normal))
+    .concat(_.shuffle(slow))
+    .concat(_.shuffle(slowest));
+  return queue;
+};
+
+exports.getNumberedList = function (list, onlyIcons) {
+  let numbers = this.getNumbersAsEmoji();
+  let numberedString = '';
+  for (let i = 0; i < list.length; i++) {
+    numberedString += numbers[i] + ' - ' + this.getDisplayName(list[i]) + '\n';
+  }
+  let numberedIcons = numbers.slice(0, list.length);
+  if (!onlyIcons) {
+    numberedIcons.push('✅', '🚫');
+  }
+  return {msg: numberedString, icons: numberedIcons};
+};
