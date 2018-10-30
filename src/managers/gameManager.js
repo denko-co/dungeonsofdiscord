@@ -1,5 +1,5 @@
-const _ = require('underscore');
-const tr = require('../translations/translations.json');
+const _ = require('underscore'); // Common array manipulations usually
+const tr = require('../translations/translations.json'); 
 const Classes = require('../content/classes.js');
 const Util = require('../util/util.js');
 const Encounters = require('../content/encounters.js');
@@ -10,24 +10,24 @@ module.exports = class GameManager {
   constructor (bot, channelId) {
     this.bot = bot;
     this.channelId = channelId;
-    this.messageId = null;
+    this.messageId = null; // Current message in focus
     this.playerIds = null;
-    this.players = [[], [], []];
+    this.players = [[], [], []]; // Players in current position order
     this.state = 'READYING';
-    this.map = [];
+    this.map = []; // Reference positions of different floor
     this.currentFloor = null;
     this.currentFloorLocation = null;
     this.currentRoom = null;
-    this.currentRoomLocation = null;
+    this.currentRoomLocation = null; // [x, y]
     this.currentRoomActions = null;
     this.previousRoomLocation = null;
-    this.currentBattle = null;
+    this.currentBattle = null; // Reference to a BattleManager
     this.battleNumber = 1;
-    this.characterInFocus = null;
-    this.currentOptionInfo = null;
-    this.queue = [];
-    this.sendQueue = [];
-    this.gameQueue = Promise.resolve();
+    this.characterInFocus = null; // Character currently taking turn
+    this.currentOptionInfo = null; // What has already been picked by characterInFocus
+    this.queue = []; // Turn order for non-battle actions
+    this.sendQueue = []; // Stores all messages. When turn completes, sends the messages.
+    this.gameQueue = Promise.resolve(); // Keeps track of Discord Events
   }
 
   initialise () {
