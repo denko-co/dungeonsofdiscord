@@ -5,8 +5,8 @@ module.exports = class Room {
     this.showName = showName;
     this.directions = directions;
     this.entities = entities || [];
-    this.onEnter = onEnter;
-    this.onExit = onExit;
+    this.onEnter = onEnter ? onEnter.bind(this) : onEnter;
+    this.onExit = onExit ? onExit.bind(this) : onExit;
     this.visited = false;
   }
 };

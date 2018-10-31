@@ -18,7 +18,13 @@ module.exports = class Character {
     // Some conversation tree in onTalk()
     // If you can use items, a list called interactionItems with names, and onInteract()
     // Some description of the person in onInspect()
-    this.logic = logic;
+    this.logic = Util.clone(logic);
+
+    for (let logicEle in this.logic) {
+      if (typeof this.logic[logicEle] === 'function') {
+        this.logic[logicEle] = this.logic[logicEle].bind(this);
+      }
+    }
 
     this.abilities = abilities || [];
     this.items = items || [];

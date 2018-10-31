@@ -1,5 +1,5 @@
 const _ = require('underscore'); // Common array manipulations usually
-const tr = require('../translations/translations.json'); 
+const tr = require('../translations/translations.json');
 const Classes = require('../content/classes.js');
 const Util = require('../util/util.js');
 const Encounters = require('../content/encounters.js');
@@ -127,17 +127,20 @@ module.exports = class GameManager {
           this.state = 'EXPLORING';
 
           this.enterFloor('DOWN');
-          /*
+
           // start the battle
           this.currentBattle = new BattleManager(this, Encounters.getEncounter('Tutorial'));
           let initResult = this.currentBattle.initialise();
           if (initResult === 'EXPLORING') this.battleNumber++;
           this.state = initResult;
-          */
+
+          // Hack to skip game manager char set, DELETE THIS ON MASTER
+          this.characterInFocus = true;
+          return this.sendAll();
         }
       }
       // Now we can bounce if the react is not from the right person
-      if (!this.currentRoom || (this.characterInFocus && this.characterInFocus.owner !== user.id)) return this.sendAll();
+      if (!this.currentRoom || (!this.currentBattle && this.characterInFocus && this.characterInFocus.owner !== user.id)) return this.sendAll();
       do { // monkas
         // Validate queue
         if (this.queue.length === 0) {

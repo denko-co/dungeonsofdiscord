@@ -138,7 +138,7 @@ exports.getEmojiNumbersAsInts = function (array) {
 
 exports.clone = function (orig) {
   // Blame https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
-  return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
+  return _.isObject(orig) ? Object.assign(Object.create(Object.getPrototypeOf(orig)), orig) : orig;
 };
 
 exports.verifyRequired = function (baseRequired, providedRequired, attachTo) {

@@ -59,11 +59,5 @@ exports.getRoom = function (name) {
     throw new Error(`Room with name ${name} not found!`);
   }
   let roomToAdd = new Room(roomDetails.name, roomDetails.showName, roomDetails.directions, roomDetails.build(), roomDetails.onEnter, roomDetails.onExit);
-
-  for (let roomFunct in roomToAdd) {
-    if (typeof roomToAdd[roomFunct] === 'function') {
-      roomToAdd[roomFunct] = roomToAdd[roomFunct].bind(roomToAdd);
-    }
-  }
   return roomToAdd;
 };

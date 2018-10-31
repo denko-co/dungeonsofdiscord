@@ -52,11 +52,5 @@ exports.getInteractable = function (name, requiredParams, displayName) {
 
   Util.verifyRequired(interactableToAdd.required, requiredParams, interactableToAdd.logic.state);
 
-  for (let logicEle in interactableToAdd.logic) {
-    if (typeof interactableToAdd.logic[logicEle] === 'function') {
-      interactableToAdd.logic[logicEle] = interactableToAdd.logic[logicEle].bind(interactableToAdd);
-    }
-  }
-
   return interactableToAdd;
 };

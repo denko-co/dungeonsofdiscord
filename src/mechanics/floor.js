@@ -6,7 +6,7 @@ module.exports = class Floor {
     this.startingRoomLocation = startingRoomLocation;
     this.floorAboveName = floorAboveName;
     this.floorBelowName = floorBelowName;
-    this.onEnter = onEnter;
+    this.onEnter = onEnter ? onEnter.bind(this) : onEnter;
     this.visited = false;
   }
 };

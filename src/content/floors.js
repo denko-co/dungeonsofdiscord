@@ -26,10 +26,5 @@ exports.getFloor = function (name, requiredParams) {
   }
   let roomMap = floorDetails.map.map(row => row.map(row => Rooms.getRoom(row)));
   let floorToAdd = new Floor(floorDetails.name, roomMap, floorDetails.startingRoomLocation, floorDetails.floorAboveName, floorDetails.floorBelowName, floorDetails.onEnter);
-  for (let floorFunct in floorToAdd) {
-    if (typeof floorToAdd[floorFunct] === 'function') {
-      floorToAdd[floorFunct] = floorToAdd[floorFunct].bind(floorToAdd);
-    }
-  }
   return floorToAdd;
 };

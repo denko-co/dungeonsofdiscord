@@ -123,11 +123,5 @@ exports.getCreature = function (name, displayName) {
     }
   }
   let creatureToAdd = new Character(creatureDetails.name, displayName || creatureDetails.name, creatureDetails.description, 'CREATURE', creatureDetails.hp, creatureDetails.speed, creatureDetails.logic, abilities, creatureDetails.items, creatureDetails.effects);
-
-  for (let logicEle in creatureToAdd.logic) {
-    if (typeof creatureToAdd.logic[logicEle] === 'function') {
-      creatureToAdd.logic[logicEle] = creatureToAdd.logic[logicEle].bind(creatureToAdd);
-    }
-  }
   return creatureToAdd;
 };
