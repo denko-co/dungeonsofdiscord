@@ -26,7 +26,7 @@ const getMention = function (userId) {
 exports.getMention = getMention;
 
 const getDisplayName = function (char) {
-  return char.owner ? this.getMention(char.owner) : char.displayName;
+  return char.controller ? this.getMention(char.controller) : char.displayName;
 };
 
 exports.getDisplayName = getDisplayName;
@@ -116,7 +116,7 @@ exports.getEffectiveCharacters = function (arrayOfArrays) {
   let enemiesArray = [];
   arrayOfArrays.forEach(subarray => {
     subarray.forEach(character => {
-      if (character.owner) {
+      if (character.controller) {
         playersArray.push(character);
       } else {
         enemiesArray.push(character);

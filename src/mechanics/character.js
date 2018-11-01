@@ -30,7 +30,7 @@ module.exports = class Character {
     this.items = items || [];
     this.effects = effects || [];
 
-    this.owner = null;
+    this.controller = null;
 
     this.alive = true;
   }

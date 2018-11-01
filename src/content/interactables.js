@@ -25,7 +25,7 @@ let interactables = {
       state: {touched: false},
       interactionItems: ['Self'],
       onInteract (item, gameManager) {
-        if (item === 'Self') {
+        if (item.controller) {
           if (this.logic.state.touched) {
             gameManager.send('The lever shifts with tremendous ease. The door to your right shifts, as if by magic.');
             const referencedDoor = this.logic.state.door;

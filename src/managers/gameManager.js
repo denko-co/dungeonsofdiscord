@@ -128,6 +128,7 @@ module.exports = class GameManager {
 
           this.enterFloor('DOWN');
 
+          /*
           // start the battle
           this.currentBattle = new BattleManager(this, Encounters.getEncounter('Tutorial'));
           let initResult = this.currentBattle.initialise();
@@ -137,10 +138,11 @@ module.exports = class GameManager {
           // Hack to skip game manager char set, DELETE THIS ON MASTER
           this.characterInFocus = true;
           return this.sendAll();
+          */
         }
       }
       // Now we can bounce if the react is not from the right person
-      if (!this.currentRoom || (!this.currentBattle && this.characterInFocus && this.characterInFocus.owner !== user.id)) return this.sendAll();
+      if (!this.currentRoom || (!this.currentBattle && this.characterInFocus && this.characterInFocus.controller !== user.id)) return this.sendAll();
       do { // monkas
         // Validate queue
         if (this.queue.length === 0) {
@@ -149,6 +151,7 @@ module.exports = class GameManager {
         if (this.characterInFocus === null) {
           this.characterInFocus = this.queue.shift(); // Need to null out before going for another loop
           this.currentRoomActions = this.getRoomValidActions(this.currentRoom);
+          this.currentOptionInfo = null;
           this.send(Util.getDisplayName(this.characterInFocus) + ', you\'re up!');
           this.send('What would you like to do?', this.currentRoomActions.icons, true);
         } else {
@@ -171,8 +174,12 @@ module.exports = class GameManager {
                 this.characterInFocus = null;
               } else if (options[0] === '💬') {
               } else if (options[0] === '✋') {
+                // Interacting, allow them to select a target
+                let interactables = Util.getNumberedList(this.currentRoomActions.actions.onInteract);
+                this.send('What would you like to interact with?\n' + interactables.msg, interactables.icons, true);
+                this.state = 'SELECT_INTERACT';
               } else if (options[0] === '🔍') {
-                // Inspecting with an, allow them to select a target
+                // Inspecting, allow them to select a target
                 let inspectables = Util.getNumberedList(this.currentRoomActions.actions.onInspect);
                 this.send('What would you like to take a look at?\n' + inspectables.msg, inspectables.icons, true);
                 this.state = 'SELECT_INSPECT';
@@ -188,11 +195,98 @@ module.exports = class GameManager {
               if (turnResult === 'EXPLORING') this.battleNumber++;
               this.state = turnResult;
               break;
+            case 'SELECT_INSPECT':
+              if (react === '🚫') {
+                this.cancelAction('Inspect');
+              } else if (react === '✅') {
+                let inspectables = Util.getNumberedList(this.currentRoomActions.actions.onInspect, true);
+                inspectables = Util.getSelectedOptions(reactions, inspectables.icons, user.id);
+                if (inspectables.length === 0) {
+                  this.send('Please select something to inspect.');
+                  messageReaction.remove(user);
+                } else if (inspectables.length > 1) {
+                  this.send('Please select only one inspectable. I know you have two eyes, but you only get one turn!');
+                  messageReaction.remove(user);
+                } else {
+                  // Figure out what the item is, run it, and bounce back.
+                  let inspectableIndex = Util.getEmojiNumbersAsInts(inspectables);
+                  let inspectable = this.currentRoomActions.actions.onInspect[inspectableIndex - 1];
+                  inspectable.logic.onInspect(this);
+                  this.state = 'EXPLORING';
+                  this.characterInFocus = null;
+                }
+              }
+              break;
+            case 'SELECT_INTERACT':
+              if (react === '🚫') {
+                this.cancelAction('Interact');
+              } else if (react === '✅') {
+                let interactables = Util.getNumberedList(this.currentRoomActions.actions.onInteract, true);
+                interactables = Util.getSelectedOptions(reactions, interactables.icons, user.id);
+                if (interactables.length === 0) {
+                  this.send('Please select something to interact with.');
+                  messageReaction.remove(user);
+                } else if (interactables.length > 1) {
+                  this.send('Please select only one interactable. I know you have two hands, but you only get one turn!');
+                  messageReaction.remove(user);
+                } else {
+                  // Give them the choices for what they will use to interact with
+                  let interactableIndex = Util.getEmojiNumbersAsInts(interactables);
+                  let interactable = this.currentRoomActions.actions.onInteract[interactableIndex - 1];
+
+                  // Figure out what they can actually use...
+                  let interactionItems = [];
+                  interactable.logic.interactionItems.forEach(item => {
+                    if (item === 'Self') {
+                      interactionItems.push(this.characterInFocus);
+                    } else {
+                      interactionItems.push(...this.characterInFocus.items.filter(charItem => charItem.name === item));
+                    }
+                  });
+                  // Inspecting, allow them to select a target
+                  let interactionList = Util.getNumberedList(interactionItems);
+                  this.currentOptionInfo = {item: interactable, interactionItems: interactionItems, interactionList: interactionList};
+                  this.send('What would you like to use to interact with ' + interactable.displayName + '?\n' + interactionList.msg, interactionList.icons, true);
+                  this.state = 'SELECT_INTERACT_ITEM';
+                }
+              }
+              break;
+            case 'SELECT_INTERACT_ITEM':
+              if (react === '🚫') {
+                // Copy pasta of the interact code
+                // Interacting, allow them to select a target
+                let interactables = Util.getNumberedList(this.currentRoomActions.actions.onInteract);
+                this.send('Targeting cancelled. What would you like to interact with?\n' + interactables.msg, interactables.icons, true);
+                this.state = 'SELECT_INTERACT';
+              } else if (react === '✅') {
+                // :thinking:
+                let itemsToUse = Util.getSelectedOptions(reactions, _.without(this.currentOptionInfo.interactionList.icons, '🚫', '✅'), user.id);
+                if (itemsToUse.length === 0) {
+                  this.send('Please select an item to use.');
+                  messageReaction.remove(user);
+                } else if (itemsToUse.length > 1) {
+                  this.send('Please only one item to use at a time.');
+                  messageReaction.remove(user);
+                } else {
+                  // Figure out what the item is, run it, and bounce back.
+                  let itemToUseIndex = Util.getEmojiNumbersAsInts(itemsToUse);
+                  let itemToUse = this.currentOptionInfo.interactionItems[itemToUseIndex - 1];
+                  this.currentOptionInfo.item.logic.onInteract(itemToUse, this);
+                  this.state = 'EXPLORING';
+                  this.characterInFocus = null;
+                }
+              }
           }
         }
       } while (this.characterInFocus === null); // Only go back around if the char in focus has been unset
     }
     return this.sendAll();
+  }
+
+  cancelAction (actionText) {
+    // Bounce back to action select
+    this.send(`${actionText} has been cancelled. What would you like to do?`, this.currentRoomActions.icons, true);
+    this.state = 'EXPLORING';
   }
 
   handleMessage (message) {
@@ -216,7 +310,7 @@ module.exports = class GameManager {
     } else if (command === 'me') {
       this.players.forEach(arr => {
         arr.forEach(char => {
-          if (char.owner === message.author.id) {
+          if (char.controller === message.author.id) {
             this.send(char.getCharacterDetails(this.currentBattle));
           }
         });

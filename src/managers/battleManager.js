@@ -63,7 +63,7 @@ module.exports = class BattleManager {
       let character = this.queue.shift();
       this.characterInFocus = character;
       this.send(Util.getDisplayName(character) + ', you\'re up!');
-      if (character.owner) {
+      if (character.controller) {
         // Hand to the player to do an action, give them options.
         let validActions = this.getValidActions(character);
         console.log('Battlefield on your turn is...');
@@ -80,7 +80,7 @@ module.exports = class BattleManager {
         return this.performTurn();
       }
     } else {
-      if (this.characterInFocus && reactionInfo.user.id === this.characterInFocus.owner) {
+      if (this.characterInFocus && reactionInfo.user.id === this.characterInFocus.controller) {
         // Player has performed an action, check if it's good to go.
         let reactions = reactionInfo.message.reactions;
         switch (this.state) {
@@ -325,7 +325,7 @@ module.exports = class BattleManager {
     actionList.push({action: Abilities.getAbility('Move'), item: null, targets: null});
     // Can only run away if in position 1, or position 6 for enemies (and even then...)
     let charPos = this.getCharacterLocation(char).arrayPosition;
-    if ((charPos === 0 && char.owner) || (charPos === 5 && !char.owner)) {
+    if ((charPos === 0 && char.controller) || (charPos === 5 && !char.controller)) {
       actionList.push({action: Abilities.getAbility('Flee'), item: null, targets: null});
     }
     // Can always pass
@@ -348,8 +348,8 @@ module.exports = class BattleManager {
           // range is on battlefield, collect chars
           this.battlefield[i].forEach(battlefieldchar => {
             if (
-              (battlefieldchar.owner && ability.targets.type !== 'ENEMY') ||
-                (!battlefieldchar.owner && ability.targets.type !== 'ALLY')
+              (battlefieldchar.controller && ability.targets.type !== 'ENEMY') ||
+                (!battlefieldchar.controller && ability.targets.type !== 'ALLY')
             ) {
               targets.push(battlefieldchar);
             }
@@ -511,9 +511,7 @@ module.exports = class BattleManager {
       text += (arr === dead ? '*Graveyard:* ' : '*Fled:* ');
       if (arr.length === 0) text += no;
       else {
-        let people = arr.map(char => {
-          return (char.owner ? Util.getMention(char.owner) : char.displayName);
-        });
+        let people = arr.map(char => Util.getDisplayName(char));
         text += Util.capitalise(Util.formattedList(Util.reduceList(people)));
       }
       text += '\n';
