@@ -1,6 +1,7 @@
 const Abilities = require('./abilities.js');
 const Character = require('../mechanics/character.js');
 const Items = require('./items.js');
+const Effects = require('./effects.js');
 const Util = require('../util/util.js');
 
 // Define all classes (instances as players, stored elsewhere...)
@@ -17,6 +18,12 @@ let classes = {
     hp: 14,
     itemNames: [
       'Training Sword'
+    ],
+    abilityNames: [
+      'Healing Hands'
+    ],
+    effects: [
+      'Flesh Heal'
     ]
   },
   loneRanger: {
@@ -85,10 +92,20 @@ exports.getClass = function (name, playerId, displayName) {
     }
   }
 
-  let classToAdd = new Character(classDetails.name, displayName || classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, items, classDetails.effects);
+  let effects = [];
+  if (classDetails.effects) {
+    for (let i = 0; i < classDetails.effects.length; i++) {
+      effects.push(Effects.getEffect(classDetails.effects[i]));
+    }
+  }
+
+  let classToAdd = new Character(classDetails.name, displayName || classDetails.name, classDetails.description, 'PLAYER', classDetails.hp, classDetails.speed, null, abilities, items, effects);
   classToAdd.controller = playerId;
   classToAdd.items.forEach(item => {
     item.owner = classToAdd;
+  });
+  classToAdd.effects.forEach(effect => {
+    effect.whoApplied = classToAdd;
   });
   return classToAdd;
 };
