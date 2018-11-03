@@ -15,6 +15,9 @@ let floors = {
       } else {
         gameManager.send('Welcome to the game.');
       }
+    },
+    onExit (gameManager) {
+      gameManager.send('Floor exited. Hmmm.');
     }
   }
 };

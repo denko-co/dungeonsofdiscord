@@ -28,7 +28,7 @@ module.exports = class BattleManager {
   }
 
   performTurn (reactionInfo) {
-    // If this method returns true, the battle is complete (need to code this...)
+    // If this method returns true, the battle is complete
     if (!reactionInfo) {
       let effective = Util.getEffectiveCharacters(this.battlefield);
       // performTurn called not off an action, perform a game turn tick
@@ -36,11 +36,11 @@ module.exports = class BattleManager {
       if (effective.players.length === 0) {
         // All players are dead or fled! Oh no!
         this.send('The battle is over! Game over man, game over!');
-        return 'EXPLORING';
+        return true;
       } else if (effective.enemies.length === 0) {
         // All enemies are dead or fled! Hooray!
         this.send('The battle is over! You win!');
-        return 'EXPLORING';
+        return true;
       }
 
       // Cleanup all effects for the turn just gone
@@ -72,7 +72,7 @@ module.exports = class BattleManager {
         this.state = 'SELECT_ABILITY';
 
         this.send('What would you like to do?', this.getIconsForActions(validActions), true);
-        return 'BATTLING';
+        return false;
       } else {
         // NPC, evaluate and tick (no interrupts).
         character.logic.performTurn(this); // I don't know anyone I am
@@ -85,7 +85,7 @@ module.exports = class BattleManager {
         let reactions = reactionInfo.message.reactions;
         switch (this.state) {
           case 'SELECT_ABILITY':
-            if (reactionInfo.react !== '✅') return 'BATTLING'; // Nothing to do!
+            if (reactionInfo.react !== '✅') return false; // Nothing to do!
             // Let's confirm their actions ...
             let options = Util.getSelectedOptions(reactions, this.getIconsForActions(this.actionsForPlayer, true), reactionInfo.user.id);
             if (options.length === 0) {
@@ -134,7 +134,7 @@ module.exports = class BattleManager {
               this.send('Please choose ' + chosen.action.targets.number + ' target' + (chosen.action.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
               this.state = 'SELECT_TARGET';
             }
-            return 'BATTLING';
+            return false;
           case 'SELECT_TARGET':
             if (reactionInfo.react === '🚫') {
               // Bounce back to action select
@@ -167,9 +167,9 @@ module.exports = class BattleManager {
                 // Turn over, move onto next person.
                 return this.performTurn();
               }
-              return 'BATTLING';
+              return false;
             } else {
-              return 'BATTLING'; // Nothing to do!
+              return false; // Nothing to do!
             }
           case 'SELECT_MOVE':
             if (reactionInfo.react === '🚫') {
@@ -191,9 +191,9 @@ module.exports = class BattleManager {
                 this.performMove(this.characterInFocus, directions[0], this.selectedAction.chance);
                 return this.performTurn();
               }
-              return 'BATTLING';
+              return false;
             } else {
-              return 'BATTLING'; // Nothing to do!
+              return false; // Nothing to do!
             }
           case 'CONFIRM_FLEE':
             if (reactionInfo.react === '🚫') {
@@ -204,11 +204,11 @@ module.exports = class BattleManager {
               this.performFlee(this.characterInFocus, this.selectedAction.chance);
               return this.performTurn();
             } else {
-              return 'BATTLING'; // Nothing to do!
+              return false; // Nothing to do!
             }
         }
       } else {
-        return 'BATTLING'; // Even less to do!
+        return false; // Even less to do!
       }
     }
   }
@@ -422,7 +422,7 @@ module.exports = class BattleManager {
     // Bounce back to action select
     this.send(`${actionText} has been cancelled. What would you like to do?`, this.getIconsForActions(this.actionsForPlayer), true);
     this.state = 'SELECT_ABILITY';
-    return 'BATTLING';
+    return false;
   }
 
   cleanupEffects (caster, charactersToCleanup) {

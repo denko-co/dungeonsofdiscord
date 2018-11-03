@@ -66,6 +66,43 @@ let creatures = {
         undamagedTurns: 0,
         shieldGiven: false
       },
+      talkState: 'start',
+      onTalk: {
+        'start': {
+          text: '"Here are some sample options!"',
+          onSay (gameManager) {
+            const lever = gameManager.getEntity(gameManager.currentRoom, 'Dungeon Lever');
+            lever.logic.state.touched = true;
+            gameManager.send('Clunk!');
+          },
+          result: ['OPTIONS', {text: 'Prepare to die!', state: 'fight'}, {text: 'Neat, cool, thanks!', state: 'cancel'}]
+        },
+        'fight': {
+          text: 'No u!',
+          result: ['BATTLE_START', 'Tutorial', 'fightReallyOver']
+        },
+        'cancel': {
+          text: 'Alright, see you later!',
+          result: ['TALK_OVER', 'start']
+        },
+        'fightover': {
+          text: 'I am slain!',
+          result: ['OPTIONS', {text: 'Yes.', state: 'fightReallyOver'}, {text: 'Yes but with more words.', state: 'fightReallyOver'}]
+        },
+        'fightReallyOver': {
+          text: '*curls up and dies*',
+          onSay (gameManager) {
+            const lever = gameManager.getEntity(gameManager.currentRoom, 'Dungeon Lever');
+            lever.logic.state.touched = true;
+            gameManager.send('Clunk!');
+          },
+          result: ['TALK_OVER', 'dead']
+        },
+        'dead': {
+          text: 'Please, no more.',
+          result: ['TALK_OVER', 'dead']
+        }
+      },
       performTurn (battleManager) {
         let turn = battleManager.turn;
         switch (turn - this.logic.state.undamagedTurns) {

@@ -2,7 +2,7 @@ const Discord = require('discord.js');
 const bot = new Discord.Client({autoReconnect: true});
 const credentials = require('./credentials.json');
 const GameManger = require('./src/managers/gameManager.js');
-const testChannel = '474806690848440324';
+const testChannel = '508067553848066069';
 let gameManagers = {};
 
 bot.login(process.env.TOKEN || credentials.DISCORD_TOKEN);

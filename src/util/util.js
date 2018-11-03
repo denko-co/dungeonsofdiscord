@@ -26,7 +26,7 @@ const getMention = function (userId) {
 exports.getMention = getMention;
 
 const getDisplayName = function (char) {
-  return char.controller ? this.getMention(char.controller) : char.displayName;
+  return char.controller ? this.getMention(char.controller) : char.displayName || char; // y i k e s
 };
 
 exports.getDisplayName = getDisplayName;

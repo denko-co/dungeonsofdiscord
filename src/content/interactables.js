@@ -30,7 +30,7 @@ let interactables = {
             gameManager.send('The lever shifts with tremendous ease. The door to your right shifts, as if by magic.');
             const referencedDoor = this.logic.state.door;
             referencedDoor.logic.state.open = true;
-            gameManager.currentRoom.direction[referencedDoor.logic.state.direction] = true; // Jesus
+            gameManager.currentRoom.directions[referencedDoor.logic.state.direction] = true; // Jesus
           } else {
             gameManager.send('The lever appears to be jammed. It would take enormous strength to unbudge it.');
           }
