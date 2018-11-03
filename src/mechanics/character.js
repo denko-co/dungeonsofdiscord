@@ -35,25 +35,41 @@ module.exports = class Character {
     this.alive = true;
   }
 
-  dealDamage (amount, source, battleManager) {
-    let damageReducers = this.getListeningEffects(battleManager, 'onRecieveDamage');
-    let reducedDamage = damageReducers.reduce((currentDamage, ele) => {
+  changeHp (amount, battleManager, modifiers, modifiedAmount) {
+    if (battleManager) {
+      // Do this through gamemanager later
+      if (modifiedAmount !== amount) {
+        battleManager.send('However, ' + Util.formattedList(modifiers.map(ele => ele.displayName)) + ' ' +
+            (modifiers.length === 1 ? 'has' : 'have') + ' modified this to ' + Math.abs(modifiedAmount) + '.');
+      }
+    }
+    this.currenthp += modifiedAmount;
+  }
+
+  dealDamage (amount, source, battleManager, reason) {
+    battleManager.send(Util.getDisplayName(this) + ' takes ' + amount + ' damage!');
+    let damageModifiers = this.getListeningEffects(battleManager, 'onRecieveDamage');
+    let modifiedDamage = damageModifiers.reduce((currentDamage, ele) => {
       let newDamage = ele.onRecieveDamage(currentDamage, this, source);
       return newDamage < 0 ? 0 : newDamage;
     }, amount);
-
-    if (battleManager) {
-      // Do this through gamemanager later
-      if (reducedDamage !== amount) {
-        battleManager.send('However, ' + Util.formattedList(damageReducers.map(ele => ele.displayName)) + ' ' +
-            (damageReducers.length === 1 ? 'has ' : 'have ') + 'reduced this to ' + reducedDamage + '.');
-      }
-    }
-    this.currenthp -= reducedDamage;
+    this.changeHp(-amount, battleManager, damageModifiers, -modifiedDamage);
     // Handle death and on damage effects
     if (this.currenthp <= 0) {
       this.alive = false;
     }
+  }
+
+  heal (amount, source, battleManager, reason) {
+    amount = amount + this.currenthp > this.hp ? this.hp - this.currenthp : amount;
+    battleManager.send(Util.getDisplayName(this) + ' is healed for ' + amount + ' health!');
+    let healingModifiers = this.getListeningEffects(battleManager, 'onReceiveHealing');
+    let modifiedHealing = healingModifiers.reduce((currentHealing, ele) => {
+      let newHealing = ele.onReceiveHealing(currentHealing, this, source);
+      return newHealing + this.currenthp > this.hp ? this.hp - this.currenthp : newHealing;
+    }, amount);
+    this.changeHp(amount, battleManager, healingModifiers, modifiedHealing);
+    return modifiedHealing;
   }
 
   cleanupEffect (character, battleManager) {

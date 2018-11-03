@@ -120,6 +120,24 @@ let abilities = {
       number: 1
     },
     range: 1
+  },
+  healingHands: {
+    name: 'Healing Hands',
+    description: 'Take 2 damage and heal a character for 4 health.',
+    type: ['HEAL', 'DAMAGE'],
+    icon: '🙌',
+    effect: Effects.getEffect('Siphon Health', {
+      getDamage: function () {
+        return 2;
+      },
+      getHealing: function () {
+        return 4;
+      }
+    }),
+    targets: {
+      number: 1
+    },
+    range: 2
   }
 };
 
