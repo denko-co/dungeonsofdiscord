@@ -14,9 +14,7 @@ let effects = {
     },
     properties: {
       onApply (battleManager, caster, target, ability) {
-        let dmg = this.getDamage();
-        battleManager.send(Util.getDisplayName(target) + ' takes ' + dmg + ' damage!');
-        target.dealDamage(dmg, caster, battleManager);
+        target.dealDamage(this.getDamage(), caster, battleManager);
       }
     }
   },
@@ -104,6 +102,33 @@ let effects = {
     properties: {
       onFleeAttempt (char, battleManager) {
         return 0;
+      }
+    }
+  },
+  fleshHeal: {
+    name: 'Flesh Heal',
+    description: 'At the end of your turn, if damaged, heal self for 3 health.',
+    flavour: 'Chocolate!',
+    ticks: null,
+    properties: {
+      onTick (battleManager, source, target) {
+        source.heal(3, source, battleManager);
+      }
+    }
+  },
+  siphonHealth: {
+    name: 'Siphon Health',
+    description: 'Deal damage to a source while healing targets.',
+    flavour: 'Cookies and Cream ;)',
+    ticks: null,
+    required: {
+      getDamage: 'function',
+      getHealing: 'function'
+    },
+    properties: {
+      onApply (battleManager, caster, target, ability) {
+        caster.dealDamage(this.getDamage(), caster, battleManager);
+        target.heal(this.getHealing(), caster, battleManager);
       }
     }
   }
