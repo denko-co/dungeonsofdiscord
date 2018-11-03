@@ -40,7 +40,7 @@ module.exports = class Character {
       // Do this through gamemanager later
       if (modifiedAmount !== amount) {
         battleManager.send('However, ' + Util.formattedList(modifiers.map(ele => ele.displayName)) + ' ' +
-            (modifiers.length === 1 ? 'has' : 'have') + ' modified this to ' + modifiers + '.');
+            (modifiers.length === 1 ? 'has' : 'have') + ' modified this to ' + Math.abs(modifiedAmount) + '.');
       }
     }
     this.currenthp += modifiedAmount;
