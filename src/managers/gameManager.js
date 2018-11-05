@@ -47,9 +47,30 @@ module.exports = class GameManager {
 
   async sendAll () {
     let msgObj = this.sendQueue.shift();
+    let bulkMessageObj = null;
     while (msgObj) {
-      await this.sendMsgObject(msgObj);
+      if (msgObj.reactions) {
+        // If msgObj has reactions, it should be sent as a separate message.
+        if (bulkMessageObj !== null && bulkMessageObj.message.length >= 0) {
+          // Send the bulkMessageObj before the reacted message.
+          await this.sendMsgObject(bulkMessageObj);
+          bulkMessageObj = null;
+        }
+        await this.sendMsgObject(msgObj);
+      } else if (bulkMessageObj === null) {
+        // If bulkMessageObj has been cleared, msgObj becomes its new base message.
+        bulkMessageObj = msgObj;
+      } else if (bulkMessageObj.message.length + msgObj.message > 2000) {
+        // If bulkMessageObj will exceed the discord max character limit, split it.
+        await this.sendMsgObject(bulkMessageObj);
+        bulkMessageObj = msgObj;
+      } else {
+        bulkMessageObj.message += ('\n' + msgObj.message);
+      }
       msgObj = this.sendQueue.shift();
+    }
+    if (bulkMessageObj !== null) {
+      await this.sendMsgObject(bulkMessageObj);
     }
   }
 
