@@ -37,7 +37,7 @@ module.exports = class Character {
 
   changeHp (amount, battleManager, modifiers, modifiedAmount) {
     if (battleManager) {
-      // Do this through gamemanager later
+      // Do this through worldmanager later
       if (modifiedAmount !== amount) {
         battleManager.send('However, ' + Util.formattedList(modifiers.map(ele => ele.displayName)) + ' ' +
             (modifiers.length === 1 ? 'has' : 'have') + ' modified this to ' + Math.abs(modifiedAmount) + '.');

@@ -9,15 +9,15 @@ let floors = {
       ['Kiki\'s Camp', 'A Stub', 'An Empty Room']
     ],
     startingRoomLocation: [0, 0],
-    onEnter (gameManager) {
+    onEnter (worldManager) {
       if (this.visited) {
-        gameManager.send('Welcome to, wait, what?');
+        worldManager.send('Welcome to, wait, what?');
       } else {
-        gameManager.send('Welcome to the game.');
+        worldManager.send('Welcome to the game.');
       }
     },
-    onExit (gameManager) {
-      gameManager.send('Floor exited. Hmmm.');
+    onExit (worldManager) {
+      worldManager.send('Floor exited. Hmmm.');
     }
   }
 };

@@ -3,8 +3,8 @@ const Abilities = require('../content/abilities.js');
 const _ = require('underscore');
 
 module.exports = class BattleManager {
-  constructor (gamemanager, encounter) {
-    this.gamemanager = gamemanager;
+  constructor (worldManager, encounter) {
+    this.worldManager = worldManager;
     this.encounter = encounter;
     this.characterInFocus = null;
     this.actionsForPlayer = null;
@@ -13,7 +13,7 @@ module.exports = class BattleManager {
     this.queue = [];
     this.graveyard = [];
     this.fled = [];
-    let playerCopy = gamemanager.players.map(arr => arr.slice());
+    let playerCopy = worldManager.players.map(arr => arr.slice());
     let enemyCopy = encounter.positions.map(arr => arr.slice());
     this.battlefield = playerCopy.reverse().concat(enemyCopy);
     this.battlefieldEffects = encounter.effects;
@@ -520,6 +520,6 @@ module.exports = class BattleManager {
   }
 
   send (message, reactions, saveId) {
-    return this.gamemanager.send(message, reactions, saveId);
+    return this.worldManager.send(message, reactions, saveId);
   }
 };

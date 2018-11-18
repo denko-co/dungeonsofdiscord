@@ -8,11 +8,11 @@ let interactables = {
     required: {direction: 'string'},
     logic: {
       state: {open: false},
-      onInspect (gameManager) {
+      onInspect (worldManager) {
         if (this.logic.state.open) {
-          gameManager.send('The door is ajar, enough for an adventurer to enter. Beyond it, faint lights, and boundless adventure.');
+          worldManager.send('The door is ajar, enough for an adventurer to enter. Beyond it, faint lights, and boundless adventure.');
         } else {
-          gameManager.send('The door is large and engraved with art of a forgotten time. It seems to be fused into the wall.');
+          worldManager.send('The door is large and engraved with art of a forgotten time. It seems to be fused into the wall.');
         }
       }
     }
@@ -24,20 +24,20 @@ let interactables = {
     logic: {
       state: {touched: false},
       interactionItems: ['Self'],
-      onInteract (item, gameManager) {
+      onInteract (item, worldManager) {
         if (item.controller) {
           if (this.logic.state.touched) {
-            gameManager.send('The lever shifts with tremendous ease. The door to your right shifts, as if by magic.');
+            worldManager.send('The lever shifts with tremendous ease. The door to your right shifts, as if by magic.');
             const referencedDoor = this.logic.state.door;
             referencedDoor.logic.state.open = true;
-            gameManager.currentRoom.directions[referencedDoor.logic.state.direction] = true; // Jesus
+            worldManager.currentRoom.directions[referencedDoor.logic.state.direction] = true; // Jesus
           } else {
-            gameManager.send('The lever appears to be jammed. It would take enormous strength to unbudge it.');
+            worldManager.send('The lever appears to be jammed. It would take enormous strength to unbudge it.');
           }
         }
       },
-      onInspect (gameManager) {
-        gameManager.send('The lever is faded, eroded by time. Its handle is firm, maybe *too* firm.');
+      onInspect (worldManager) {
+        worldManager.send('The lever is faded, eroded by time. Its handle is firm, maybe *too* firm.');
       }
     }
   }

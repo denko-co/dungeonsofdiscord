@@ -11,15 +11,15 @@ let rooms = {
     directions: {
       right: false
     },
-    onEnter (gameManager) {
+    onEnter (worldManager) {
       if (this.visited) {
-        gameManager.send('Camp entered.');
+        worldManager.send('Camp entered.');
       } else {
-        gameManager.send('Welcome to Camp Kiki!');
+        worldManager.send('Welcome to Camp Kiki!');
       }
     },
-    onExit (gameManager) {
-      gameManager.send('Camp exited.');
+    onExit (worldManager) {
+      worldManager.send('Camp exited.');
     },
     build () {
       const door = Interactables.getInteractable('Dungeon Door', {direction: 'right'});
@@ -30,11 +30,11 @@ let rooms = {
   anEmptyRoom: {
     name: 'An Empty Room',
     directions: {},
-    onEnter (gameManager) {
-      gameManager.send('You should not be here!');
+    onEnter (worldManager) {
+      worldManager.send('You should not be here!');
     },
-    onExit (gameManager) {
-      gameManager.send('How can you leave? There\'s no doors!');
+    onExit (worldManager) {
+      worldManager.send('How can you leave? There\'s no doors!');
     },
     build () { return []; }
   },
@@ -43,11 +43,11 @@ let rooms = {
     directions: {
       left: true
     },
-    onEnter (gameManager) {
-      gameManager.send('Stub entered.');
+    onEnter (worldManager) {
+      worldManager.send('Stub entered.');
     },
-    onExit (gameManager) {
-      gameManager.send('Stub exited.');
+    onExit (worldManager) {
+      worldManager.send('Stub exited.');
     },
     build () { return []; }
   }

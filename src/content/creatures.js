@@ -70,10 +70,10 @@ let creatures = {
       onTalk: {
         'start': {
           text: '"Here are some sample options!"',
-          onSay (gameManager) {
-            const lever = gameManager.getEntity(gameManager.currentRoom, 'Dungeon Lever');
+          onSay (worldManager) {
+            const lever = worldManager.getEntity(worldManager.currentRoom, 'Dungeon Lever');
             lever.logic.state.touched = true;
-            gameManager.send('Clunk!');
+            worldManager.send('Clunk!');
           },
           result: ['OPTIONS', {text: 'Prepare to die!', state: 'fight'}, {text: 'Neat, cool, thanks!', state: 'cancel'}]
         },
@@ -91,10 +91,10 @@ let creatures = {
         },
         'fightReallyOver': {
           text: '*curls up and dies*',
-          onSay (gameManager) {
-            const lever = gameManager.getEntity(gameManager.currentRoom, 'Dungeon Lever');
+          onSay (worldManager) {
+            const lever = worldManager.getEntity(worldManager.currentRoom, 'Dungeon Lever');
             lever.logic.state.touched = true;
-            gameManager.send('Clunk!');
+            worldManager.send('Clunk!');
           },
           result: ['TALK_OVER', 'dead']
         },
