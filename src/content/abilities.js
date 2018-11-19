@@ -60,6 +60,23 @@ let abilities = {
     range: 1,
     icon: '⚔'
   },
+  block: {
+    name: 'Block',
+    description: 'Reduce incoming damage by 5-7 points.',
+    flavour: 'Where does the variance come from?',
+    type: ['BLOCK'],
+    targets: {
+      number: 1,
+      type: 'SELF'
+    },
+    effect: Effects.getEffect('Flat Block', {
+      baseReduce: function (damage) {
+        return damage - _.random(3, 5);
+      }
+    }),
+    range: 0,
+    icon: '⚙'
+  },
   dummyDefense: {
     name: 'Dummy Defense',
     description: 'Reduce incoming damage by 1 this turn. If it\'s a Training Dummy, negate all of it.',

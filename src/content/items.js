@@ -20,6 +20,15 @@ let items = {
       'Dummy Defense'
     ]
   },
+  spikedShield: {
+    name: 'Spiked Shield',
+    description: 'An offensive and defensive beginner\'s item.',
+    flavour: 'The best defense is a good offense.',
+    abilityNames: [
+      ['Whack', 'Bash'],
+      'Block'
+    ]
+  },
   bottledAnxiety: {
     name: 'Bottled Anxiety',
     description: 'A small vibrating vial of grey liquid. I wonder what this does?',
@@ -52,7 +61,12 @@ exports.getItem = function (name, displayName) {
   let abilities = [];
   if (itemDetails.abilityNames) {
     for (let i = 0; i < itemDetails.abilityNames.length; i++) {
-      abilities.push(Abilities.getAbility(itemDetails.abilityNames[i]));
+      let abil = itemDetails.abilityNames[i];
+      if (Array.isArray(abil)) {
+        abilities.push(Abilities.getAbility(...abil));
+      } else {
+        abilities.push(Abilities.getAbility(abil));
+      }
     }
   }
   let itemToAdd = new Item(itemDetails.name, displayName || itemDetails.name, itemDetails.description, itemDetails.flavour, abilities, itemDetails.effects, itemDetails.onUse);

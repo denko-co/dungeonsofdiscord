@@ -18,6 +18,19 @@ let effects = {
       }
     }
   },
+  flatBlock: {
+    name: 'Flat Block',
+    description: 'Reduces incoming damage by a *flat* amount. Will resolve immediately.',
+    flavour: 'Block it very hard!',
+    required: {
+      baseReduce: 'function'
+    },
+    properties: {
+      onRecieveDamage (dmg, target, source, ability) {
+        return this.baseReduce(dmg);
+      }
+    }
+  },
   selectiveBlock: {
     name: 'Selective Block',
     description: 'Reducing incoming damage, more for some enemies.',

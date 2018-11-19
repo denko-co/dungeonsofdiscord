@@ -35,6 +35,6 @@ module.exports = class Ability {
     }
     if (this.targets) info += (info === '' ? '' : ', ') + this.targets.number + ' target' + (this.targets.number === 1 ? '' : 's');
     if (this.range) info += (info === '' ? '' : ', ') + this.range + ' range';
-    return text + ' ' + (info === '' ? '' : '(' + info + ')');
+    return text + (info === '' ? '' : '(' + info + ')');
   }
 };
