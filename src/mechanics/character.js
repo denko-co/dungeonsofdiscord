@@ -44,7 +44,7 @@ module.exports = class Character {
   }
 
   dealDamage (amount, source, manager, reason) {
-    manager.send(Util.getDisplayName(this) + ' takes ' + amount + ' damage!');
+    manager.send(Util.getDisplayName(this) + ' takes ' + amount + ' damage' + (reason || '') + '!');
     let damageModifiers = this.getListeningEffects(manager, 'onRecieveDamage');
     let modifiedDamage = damageModifiers.reduce((currentDamage, ele) => {
       let newDamage = ele.onRecieveDamage(currentDamage, this, source);
@@ -59,7 +59,7 @@ module.exports = class Character {
 
   heal (amount, source, manager, reason) {
     amount = amount + this.currenthp > this.hp ? this.hp - this.currenthp : amount;
-    manager.send(Util.getDisplayName(this) + ' is healed for ' + amount + ' health!');
+    manager.send(Util.getDisplayName(this) + ' is healed for ' + amount + ' health' + (reason || '') + '!');
     let healingModifiers = this.getListeningEffects(manager, 'onReceiveHealing');
     let modifiedHealing = healingModifiers.reduce((currentHealing, ele) => {
       let newHealing = ele.onReceiveHealing(currentHealing, this, source);

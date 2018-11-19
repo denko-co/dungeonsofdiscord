@@ -112,7 +112,9 @@ let effects = {
     ticks: null,
     properties: {
       onTick (manager, source, target) {
-        source.heal(3, source, manager);
+        // if (source.currenthp !== source.hp) {
+        source.heal(3, source, manager, ' from Flesh Heal');
+        // }
       }
     }
   },

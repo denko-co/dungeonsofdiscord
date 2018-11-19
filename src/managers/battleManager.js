@@ -38,12 +38,18 @@ module.exports = class BattleManager {
     // If this method returns true, the battle is complete
     // Will return 'CANCEL' if temporary and nothing happened
     if (!reactionInfo) {
+      let effective = Util.getEffectiveCharacters(this.battlefield);
+      // performTurn called not off an action, perform a game turn tick
+
+      // Cleanup all effects for the turn just gone
+      if (this.characterInFocus) {
+        this.worldManager.cleanupEffects(this.characterInFocus, effective.players
+          .concat(effective.enemies)
+          .concat(_.without(this.worldManager.getWorldEntities(), ...effective.enemies)), this);
+      }
       if (this.isTemporary) {
         if (this.queue.length === 0) return true; // Person made their turn, delet this
       } else {
-        let effective = Util.getEffectiveCharacters(this.battlefield);
-        // performTurn called not off an action, perform a game turn tick
-
         if (effective.players.length === 0) {
           // All players are dead or fled! Oh no!
           this.send('The battle is over! Game over man, game over!');
@@ -52,13 +58,6 @@ module.exports = class BattleManager {
           // All enemies are dead or fled! Hooray!
           this.send('The battle is over! You win!');
           return true;
-        }
-
-        // Cleanup all effects for the turn just gone
-        if (this.characterInFocus) {
-          this.worldManager.cleanupEffects(this.characterInFocus, effective.players
-            .concat(effective.enemies)
-            .concat(_.without(this.worldManager.getWorldEntities(), ...effective.enemies)), this);
         }
 
         if (this.queue.length === 0) {
