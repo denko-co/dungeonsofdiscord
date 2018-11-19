@@ -50,7 +50,7 @@ module.exports = class BattleManager {
       if (this.queue.length === 0) {
         this.queue = Util.prepareQueue(effective.players, effective.enemies);
 
-        // Take this opportunity to cleanup for dead/fled people
+        // Take this opportunity to cleanup for dead people
         for (let i = 0; i < this.graveyard.length; i++) {
           this.cleanupEffects(this.graveyard[i], effective.players.concat(effective.enemies));
         }
@@ -125,6 +125,13 @@ module.exports = class BattleManager {
                 this.send(moveInfo.msg + 'Where would you like to move?', moveInfo.icons, true);
                 this.state = 'SELECT_MOVE';
               }
+            } else if (options[0] === '🎁') {
+              // Gifting! Giving? Choose an item first
+              let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
+              this.selectedAction = chosen;
+              let giftables = Util.getNumberedList(chosen.items);
+              this.send('What item would you like to give?\n' + giftables.msg, giftables.icons, true);
+              this.state = 'SELECT_GIVE';
             } else {
               // Option selected, slam it
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
@@ -205,6 +212,63 @@ module.exports = class BattleManager {
             } else {
               return false; // Nothing to do!
             }
+          case 'SELECT_GIVE':
+            if (reactionInfo.react === '🚫') {
+              this.cancelAction('Giving');
+            } else if (reactionInfo.react === '✅') {
+              let giftables = Util.getNumberedList(this.selectedAction.items, true);
+              giftables = Util.getSelectedOptions(reactions, giftables.icons, reactionInfo.user.id);
+              if (giftables.length === 0) {
+                this.send('Please select an item to give.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else if (giftables.length > 1) {
+                this.send('So generous! But please, one at a time.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else {
+                let giftIndex = Util.getEmojiNumbersAsInts(giftables);
+                let gift = this.selectedAction.items[giftIndex - 1];
+                this.selectedAction.item = gift;
+                // Give them choice on who to gift
+                // I swap allies <-> team depending on whether I'm testing or not
+                let alliesList = Util.getNumberedList(this.selectedAction.targets);
+                this.send('Who would you like to give *' + Util.getDisplayName(gift) + '*?\n' + alliesList.msg, alliesList.icons, true);
+                this.state = 'SELECT_GIVE_TARGET';
+              }
+            }
+            return false;
+          case 'SELECT_GIVE_TARGET':
+            if (reactionInfo.react === '🚫') {
+              // Copy pasta of the gift code
+              let giftables = Util.getNumberedList(this.selectedAction.items);
+              this.send('What item would you like to give?\n' + giftables.msg, giftables.icons, true);
+              this.state = 'SELECT_GIVE';
+            } else if (reactionInfo.react === '✅') {
+              // :thinking:
+              let personsToGift = Util.getSelectedOptions(reactions, Util.getNumberedList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
+              if (personsToGift.length === 0) {
+                this.send('Please select a person to gift.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else if (personsToGift.length > 1) {
+                this.send('Please select only one person - what are they gonna do, cut it up? Shared custody?');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else {
+                // Figure out person and item index
+                let personToGiftIndex = Util.getEmojiNumbersAsInts(personsToGift);
+                let personToGift = this.selectedAction.targets[personToGiftIndex - 1];
+
+                // Give item to person
+                personToGift.items.push(this.selectedAction.item);
+                this.selectedAction.item.owner = personToGift;
+
+                // Take it away from the owner ;(
+                let giftIndex = this.characterInFocus.items.indexOf(this.selectedAction.item);
+                this.characterInFocus.items.splice(giftIndex, 1);
+
+                this.send('Transfer complete! Enjoy your loot.');
+                return this.performTurn();
+              }
+            }
+            return false;
         }
       } else {
         return false; // Even less to do!
@@ -327,6 +391,17 @@ module.exports = class BattleManager {
     if ((charPos === 0 && char.controller) || (charPos === 5 && !char.controller)) {
       actionList.push({action: Abilities.getAbility('Flee'), item: null, targets: null});
     }
+
+    // If there's a char provided and they have loot, let them give stuff
+    if (char.items.length > 0) {
+      let giveAbility = Abilities.getAbility('Give');
+      let targets = this.getValidTargets(char, giveAbility);
+      if (targets && targets.length !== 0) {
+        // Note that this is > items, item gets set when we select one
+        actionList.push({action: Abilities.getAbility('Give'), items: char.items.slice(), targets: targets});
+      }
+    }
+
     // Can always pass
     actionList.push({action: Abilities.getAbility('Pass'), item: null, targets: null});
     return actionList;

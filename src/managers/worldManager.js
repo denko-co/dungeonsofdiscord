@@ -72,11 +72,6 @@ module.exports = class WorldManager {
               let inspectables = Util.getNumberedList(this.currentRoomActions.actions.onInspect);
               this.send('What would you like to take a look at?\n' + inspectables.msg, inspectables.icons, true);
               this.state = 'SELECT_INSPECT';
-            } else if (options[0] === '🎁') {
-              // Gifting! Giving? Choose an item first
-              let giftables = Util.getNumberedList(this.currentRoomActions.actions.give);
-              this.send('What item would you like to give?\n' + giftables.msg, giftables.icons, true);
-              this.state = 'SELECT_GIVE';
             } else if (options[0] === '🗺') {
               // Moving between rooms, pick a direction
               let directions = Util.getNumberedList(this.currentRoomActions.actions.move.map(direction => Util.capitalise(direction)));
@@ -206,67 +201,6 @@ module.exports = class WorldManager {
               }
             }
             break;
-          case 'SELECT_GIVE':
-            if (react === '🚫') {
-              this.cancelAction('Giving');
-            } else if (react === '✅') {
-              let giftables = Util.getNumberedList(this.currentRoomActions.actions.give, true);
-              giftables = Util.getSelectedOptions(reactions, giftables.icons, user.id);
-              if (giftables.length === 0) {
-                this.send('Please select an item to give.');
-                messageReaction.remove(user);
-              } else if (giftables.length > 1) {
-                this.send('So generous! But please, one at a time.');
-                messageReaction.remove(user);
-              } else {
-                let giftIndex = Util.getEmojiNumbersAsInts(giftables);
-                let gift = this.currentRoomActions.actions.give[giftIndex - 1];
-                let team = Util.getEffectiveCharacters(this.gameManager.players).players;
-                // let allies = _.without(team, this.characterInFocus);
-                this.currentOptionInfo = {gift: gift, allies: team};
-                // Give them choice on who to gift
-                // I swap allies <-> team depending on whether I'm testing or not
-                let alliesList = Util.getNumberedList(team);
-                this.currentOptionInfo = {gift: gift, allies: team, alliesList: alliesList};
-                this.send('Who would you like to give *' + Util.getDisplayName(gift) + '*?\n' + alliesList.msg, alliesList.icons, true);
-                this.state = 'SELECT_GIVE_TARGET';
-              }
-            }
-            break;
-          case 'SELECT_GIVE_TARGET':
-            if (react === '🚫') {
-              // Copy pasta of the gift code
-              let giftables = Util.getNumberedList(this.currentRoomActions.actions.give);
-              this.send('What item would you like to give?\n' + giftables.msg, giftables.icons, true);
-              this.state = 'SELECT_GIVE';
-            } else if (react === '✅') {
-              // :thinking:
-              let personsToGift = Util.getSelectedOptions(reactions, _.without(this.currentOptionInfo.alliesList.icons, '🚫', '✅'), user.id);
-              if (personsToGift.length === 0) {
-                this.send('Please select a person to gift.');
-                messageReaction.remove(user);
-              } else if (personsToGift.length > 1) {
-                this.send('Please select only one person - what are they gonna do, cut it up? Shared custody?');
-                messageReaction.remove(user);
-              } else {
-                // Figure out person and item index
-                let personToGiftIndex = Util.getEmojiNumbersAsInts(personsToGift);
-                let personToGift = this.currentOptionInfo.allies[personToGiftIndex - 1];
-
-                // Give item to person
-                personToGift.items.push(this.currentOptionInfo.gift);
-                this.currentOptionInfo.gift.owner = personToGift;
-
-                // Take it away from the owner ;(
-                let giftIndex = this.characterInFocus.items.indexOf(this.currentOptionInfo.gift);
-                this.characterInFocus.items.splice(giftIndex, 1);
-
-                this.send('Transfer complete! Enjoy your loot.');
-                this.state = 'EXPLORING';
-                this.characterInFocus = null;
-              }
-            }
-            break;
           case 'SELECT_MOVE':
             if (react === '🚫') {
               this.cancelAction('Movement');
@@ -381,14 +315,12 @@ module.exports = class WorldManager {
       'onInteract': [],
       'onInspect': [],
       // These are from the char and room
-      'give': [],
       'move': []
     };
     let iconMap = {
       'onTalk': '💬',
       'onInteract': '✋',
       'onInspect': '🔍',
-      'give': '🎁',
       'move': '🗺'
     };
     room.entities.forEach(entity => {
@@ -397,15 +329,6 @@ module.exports = class WorldManager {
         if (entity.logic[prop]) actionList[prop].push(entity);
       }
     });
-
-    // If there's a char provided and they have loot, let them give stuff
-    if (char) {
-      // if (_.without(Util.getEffectiveCharacters(this.gameManager.players).players, char).length !== 0) {
-      for (let item of char.items) {
-        actionList['give'].push(item);
-      }
-      // }
-    }
 
     // If there's a direction that can be moved in, provide the option
     for (let direction in room.directions) {

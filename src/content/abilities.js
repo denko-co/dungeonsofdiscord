@@ -24,6 +24,17 @@ let abilities = {
     type: ['MOVE_FORWARD', 'MOVE_BACKWARD'],
     icon: '↔'
   },
+  give: {
+    name: 'Give',
+    description: 'Special ability for giving an item',
+    type: ['GIVE'],
+    icon: '🎁',
+    targets: {
+      number: 1,
+      type: 'ALLY'
+    },
+    range: 1
+  },
   // Player abilities
   whack: {
     name: 'Whack',
