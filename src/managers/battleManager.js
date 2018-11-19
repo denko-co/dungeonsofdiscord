@@ -16,7 +16,7 @@ module.exports = class BattleManager {
     this.isTemporary = battleTurnUser !== undefined;
     if (this.isTemporary) {
       this.queue = [battleTurnUser];
-      this.battlefield = players; // Want to operate on the raw players array
+      this.battlefield = players.slice().reverse(); // Want to operate on the raw players array
       this.battlefieldEffects = [[], [], []]; // :v)
     } else {
       this.queue = [];
@@ -340,6 +340,7 @@ module.exports = class BattleManager {
       }, 1),
       text: 'left',
       position: 0,
+      tempPosition: 0,
       direction: 'back',
       icon: '⬅'
     };
@@ -351,13 +352,14 @@ module.exports = class BattleManager {
       }, 1),
       text: 'right',
       position: 5,
+      tempPosition: 2,
       direction: 'forward',
       icon: '➡'
     };
 
     // Build message response
     [moveLeftDetails, moveRightDetails].forEach(direction => {
-      if (position === direction.position) {
+      if (position === (this.isTemporary ? direction.tempPosition : direction.position)) {
         // Can't move further
         msg += `You are as far ${direction.direction} as possible, and can't move further to the ${direction.text}.`;
         direction.chance = 0;
