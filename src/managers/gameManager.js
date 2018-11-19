@@ -123,7 +123,7 @@ module.exports = class GameManager {
       // Don't grab a result here because THE FUN NEVER ENDS
       this.world.performTurn(reactionInfo);
       battleCreated = this.currentBattle !== null;
-    } while (battleCreated); // Only go back around if the gameManger has created a new battle
+    } while (battleCreated); // Only go back around if the gameManager has created a new battle
 
     return this.sendAll(); // All done!
   }

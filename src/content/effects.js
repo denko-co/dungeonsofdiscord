@@ -13,8 +13,8 @@ let effects = {
       getDamage: 'function'
     },
     properties: {
-      onApply (battleManager, caster, target, ability) {
-        target.dealDamage(this.getDamage(), caster, battleManager);
+      onApply (manager, caster, target, ability) {
+        target.dealDamage(this.getDamage(), caster, manager);
       }
     }
   },
@@ -73,12 +73,12 @@ let effects = {
       toGive: 'array'
     },
     properties: {
-      onApply (battleManager, caster, target, ability) {
+      onApply (manager, caster, target, ability) {
         for (let i = 0; i < this.toGive.length; i++) {
           let newItem = Items.getItem(this.toGive[i]);
           newItem.owner = target;
           target.items.push(newItem);
-          battleManager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.displayName + '**: *' + newItem.flavour + '*');
+          manager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.displayName + '**: *' + newItem.flavour + '*');
         }
       }
     }
@@ -89,7 +89,7 @@ let effects = {
     flavour: 'The grass is always greener on the other side.',
     ticks: null,
     properties: {
-      onMoveForwardAttempt (char, battleManager) {
+      onMoveForwardAttempt (char, manager) {
         return 0;
       }
     }
@@ -100,7 +100,7 @@ let effects = {
     flavour: 'No surrender!',
     ticks: null,
     properties: {
-      onFleeAttempt (char, battleManager) {
+      onFleeAttempt (char, manager) {
         return 0;
       }
     }
@@ -111,8 +111,8 @@ let effects = {
     flavour: 'Chocolate!',
     ticks: null,
     properties: {
-      onTick (battleManager, source, target) {
-        source.heal(3, source, battleManager);
+      onTick (manager, source, target) {
+        source.heal(3, source, manager);
       }
     }
   },
@@ -126,9 +126,9 @@ let effects = {
       getHealing: 'function'
     },
     properties: {
-      onApply (battleManager, caster, target, ability) {
-        caster.dealDamage(this.getDamage(), caster, battleManager);
-        target.heal(this.getHealing(), caster, battleManager);
+      onApply (manager, caster, target, ability) {
+        caster.dealDamage(this.getDamage(), caster, manager);
+        target.heal(this.getHealing(), caster, manager);
       }
     }
   }

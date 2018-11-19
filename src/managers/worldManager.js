@@ -8,7 +8,7 @@ module.exports = class WorldManager {
   constructor (gameManager) {
     this.gameManager = gameManager; // To allow for info to be passed up or to request info
     this.state = 'EXPLORING';
-    this.map = []; // Reference positions of different floor
+    this.map = []; // Reference positions of different floors
     this.currentFloor = null;
     this.currentFloorLocation = null;
     this.currentRoom = null;
@@ -56,7 +56,7 @@ module.exports = class WorldManager {
             } else if (options[0] === '🤷') {
               // Player is passing, do nothing
               this.send('Passing? Are you sure? Alright then.');
-              this.characterInFocus = null;
+              this.cleanupCurrentCharacter();
             } else if (options[0] === '💬') {
               // Talking , allow them to select a target
               let conversators = Util.getNumberedList(this.currentRoomActions.actions.onTalk);
@@ -139,8 +139,7 @@ module.exports = class WorldManager {
                 let inspectableIndex = Util.getEmojiNumbersAsInts(inspectables);
                 let inspectable = this.currentRoomActions.actions.onInspect[inspectableIndex - 1];
                 inspectable.logic.onInspect(this);
-                this.state = 'EXPLORING';
-                this.characterInFocus = null;
+                this.cleanupCurrentCharacter();
               }
             }
             break;
@@ -199,8 +198,7 @@ module.exports = class WorldManager {
                 let itemToUseIndex = Util.getEmojiNumbersAsInts(itemsToUse);
                 let itemToUse = this.currentOptionInfo.interactionItems[itemToUseIndex - 1];
                 this.currentOptionInfo.item.logic.onInteract(itemToUse, this);
-                this.state = 'EXPLORING';
-                this.characterInFocus = null;
+                this.cleanupCurrentCharacter();
               }
             }
             break;
@@ -228,8 +226,7 @@ module.exports = class WorldManager {
                 let direction = this.currentRoomActions.actions.move[directionIndex - 1];
                 let directCoord = mapping[direction];
                 this.enterRoom([this.currentRoomLocation[0] + directCoord[0], this.currentRoomLocation[1] + directCoord[1]]);
-                this.state = 'EXPLORING';
-                this.characterInFocus = null;
+                this.cleanupCurrentCharacter();
               }
             }
             break;
@@ -246,6 +243,8 @@ module.exports = class WorldManager {
         this.handleConversation(person);
         return !this.state.startsWith('SELECT_TALK');
       }
+    } else {
+      this.cleanupCurrentCharacter();
     }
     return true;
   }
@@ -275,8 +274,7 @@ module.exports = class WorldManager {
         break;
       case 'TALK_OVER':
         person.logic.talkState = result[0];
-        this.state = 'EXPLORING';
-        this.characterInFocus = null;
+        this.cleanupCurrentCharacter();
         break;
       case 'BATTLE_START':
         this.gameManager.currentBattle = new BattleManager(this, this.gameManager.players, Encounters.getEncounter(result[0]));
@@ -347,6 +345,54 @@ module.exports = class WorldManager {
     icons.push('🤷', '➡', '✅'); // Can always pass, can always swap to battle mode
 
     return {actions: actionList, icons: icons};
+  }
+
+  cleanupEffects (caster, charactersToCleanup, battleManager) {
+    charactersToCleanup.forEach(char => char.cleanupEffect(caster, battleManager || this));
+    if (!battleManager) return;
+    for (let i = 0; i < battleManager.battlefieldEffects.length; i++) {
+      for (let j = battleManager.battlefieldEffects[i].length - 1; j >= 0; j--) {
+        // Hmm, this looks familiar ...
+        let effect = battleManager.battlefieldEffects[i][j];
+        if (effect.whoApplied === caster) {
+          if (effect.ticks === effect.currentTicks) {
+            // Expire the effect
+            if (effect.onRemoveBattlefield) {
+              effect.onRemoveBattlefield(battleManager, caster);
+            }
+            battleManager.battlefieldEffects[i].splice(j, 1);
+          } else {
+            if (effect.onTickBattlefield) {
+              effect.onTickBattlefield(battleManager, caster);
+            }
+            effect.currentTicks++;
+          }
+        }
+      }
+    }
+  }
+
+  cleanupCurrentCharacter () {
+    // Now this, this is disgusting
+    // We need to cleanup EVERYONE, in EVERY ROOM (EVEN WHERE WE AREN'T)
+    this.cleanupEffects(this.characterInFocus, Util.getEffectiveCharacters(this.gameManager.players).players.concat(this.getWorldEntities()));
+    this.state = 'EXPLORING';
+    this.characterInFocus = null;
+  }
+
+  getWorldEntities () {
+    let entities = [];
+    // Pray for me
+    this.map.forEach(floor => {
+      floor.map.forEach(row => {
+        row.forEach(room => {
+          room.entities.forEach(entity => {
+            if (entity.effects && entity.effects.length > 0) entities.push(entity);
+          });
+        });
+      });
+    });
+    return entities;
   }
 
   send (message, reactions, saveId) {

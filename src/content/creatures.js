@@ -41,7 +41,7 @@ let creatures = {
           }
           this.logic.state.swung = true;
         } else {
-          if (this.hasEffect('Anxiety')) { // ;(
+          if (this.hasEffect('Anxiety', battleManager)) { // ;(
             battleManager.send('The Dummy is overcome. It can\'t take it anymore.');
             battleManager.useAbility(this.abilities[0], this, [this]);
           } else {

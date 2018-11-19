@@ -35,48 +35,45 @@ module.exports = class Character {
     this.alive = true;
   }
 
-  changeHp (amount, battleManager, modifiers, modifiedAmount) {
-    if (battleManager) {
-      // Do this through worldmanager later
-      if (modifiedAmount !== amount) {
-        battleManager.send('However, ' + Util.formattedList(modifiers.map(ele => ele.displayName)) + ' ' +
-            (modifiers.length === 1 ? 'has' : 'have') + ' modified this to ' + Math.abs(modifiedAmount) + '.');
-      }
+  changeHp (amount, manager, modifiers, modifiedAmount) {
+    if (modifiedAmount !== amount) {
+      manager.send('However, ' + Util.formattedList(modifiers.map(ele => ele.displayName)) + ' ' +
+          (modifiers.length === 1 ? 'has' : 'have') + ' modified this to ' + Math.abs(modifiedAmount) + '.');
     }
     this.currenthp += modifiedAmount;
   }
 
-  dealDamage (amount, source, battleManager, reason) {
-    battleManager.send(Util.getDisplayName(this) + ' takes ' + amount + ' damage!');
-    let damageModifiers = this.getListeningEffects(battleManager, 'onRecieveDamage');
+  dealDamage (amount, source, manager, reason) {
+    manager.send(Util.getDisplayName(this) + ' takes ' + amount + ' damage!');
+    let damageModifiers = this.getListeningEffects(manager, 'onRecieveDamage');
     let modifiedDamage = damageModifiers.reduce((currentDamage, ele) => {
       let newDamage = ele.onRecieveDamage(currentDamage, this, source);
       return newDamage < 0 ? 0 : newDamage;
     }, amount);
-    this.changeHp(-amount, battleManager, damageModifiers, -modifiedDamage);
+    this.changeHp(-amount, manager, damageModifiers, -modifiedDamage);
     // Handle death and on damage effects
     if (this.currenthp <= 0) {
       this.alive = false;
     }
   }
 
-  heal (amount, source, battleManager, reason) {
+  heal (amount, source, manager, reason) {
     amount = amount + this.currenthp > this.hp ? this.hp - this.currenthp : amount;
-    battleManager.send(Util.getDisplayName(this) + ' is healed for ' + amount + ' health!');
-    let healingModifiers = this.getListeningEffects(battleManager, 'onReceiveHealing');
+    manager.send(Util.getDisplayName(this) + ' is healed for ' + amount + ' health!');
+    let healingModifiers = this.getListeningEffects(manager, 'onReceiveHealing');
     let modifiedHealing = healingModifiers.reduce((currentHealing, ele) => {
       let newHealing = ele.onReceiveHealing(currentHealing, this, source);
       return newHealing + this.currenthp > this.hp ? this.hp - this.currenthp : newHealing;
     }, amount);
-    this.changeHp(amount, battleManager, healingModifiers, modifiedHealing);
+    this.changeHp(amount, manager, healingModifiers, modifiedHealing);
     return modifiedHealing;
   }
 
-  cleanupEffect (character, battleManager) {
+  cleanupEffect (character, manager) {
     for (let i = 0; i < this.items.length; i++) {
       let item = this.items[i];
       for (let j = item.effects.length - 1; j >= 0; j--) {
-        let toRemove = this.processEffect(item.effects[j], character, battleManager);
+        let toRemove = this.processEffect(item.effects[j], character, manager);
         if (toRemove) {
           item.effects.splice(j, 1);
         }
@@ -84,24 +81,24 @@ module.exports = class Character {
     }
     for (let i = this.effects.length - 1; i >= 0; i--) {
       // Same again
-      let toRemove = this.processEffect(this.effects[i], character, battleManager);
+      let toRemove = this.processEffect(this.effects[i], character, manager);
       if (toRemove) {
         this.effects.splice(i, 1);
       }
     }
   }
 
-  processEffect (effect, character, battleManager) {
+  processEffect (effect, character, manager) {
     if (effect.whoApplied === character) {
       if (effect.ticks === effect.currentTicks) {
         // Expire the effect
         if (effect.onRemove) {
-          effect.onRemove(battleManager, character, this);
+          effect.onRemove(manager, character, this);
         }
         return true;
       } else {
         if (effect.onTick) {
-          effect.onTick(battleManager, character, this);
+          effect.onTick(manager, character, this);
         }
         effect.currentTicks++;
       }
@@ -109,8 +106,8 @@ module.exports = class Character {
     return false;
   }
 
-  hasEffect (effectName, battleManager) {
-    let effects = this.getAllEffects(battleManager);
+  hasEffect (effectName, manager) {
+    let effects = this.getAllEffects(manager);
     for (let i = 0; i < effects.length; i++) {
       // Use real name to correctly identify effect
       if (effects[i].name === effectName) return true;
@@ -118,11 +115,11 @@ module.exports = class Character {
     return false;
   }
 
-  getAllEffects (battleManager) {
+  getAllEffects (manager) {
     let battleEffects = [];
     let itemEffects = [];
-    if (battleManager) {
-      battleEffects = battleManager.battlefieldEffects[battleManager.getCharacterLocation(this).arrayPosition];
+    if (manager.battlefieldEffects) {
+      battleEffects = manager.battlefieldEffects[manager.getCharacterLocation(this).arrayPosition];
     }
     this.items.forEach(item => {
       itemEffects = itemEffects.concat(item.effects);
@@ -130,8 +127,8 @@ module.exports = class Character {
     return itemEffects.concat(this.effects).concat(battleEffects);
   }
 
-  getListeningEffects (battleManager, functionName) {
-    return this.getAllEffects(battleManager).filter(effect => effect[functionName]);
+  getListeningEffects (manager, functionName) {
+    return this.getAllEffects(manager).filter(effect => effect[functionName]);
   }
 
   getCharacterDetails (battleManager) {

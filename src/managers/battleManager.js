@@ -56,7 +56,9 @@ module.exports = class BattleManager {
 
         // Cleanup all effects for the turn just gone
         if (this.characterInFocus) {
-          this.cleanupEffects(this.characterInFocus, effective.players.concat(effective.enemies));
+          this.worldManager.cleanupEffects(this.characterInFocus, effective.players
+            .concat(effective.enemies)
+            .concat(_.without(this.worldManager.getWorldEntities(), ...effective.enemies)), this);
         }
 
         if (this.queue.length === 0) {
@@ -64,7 +66,9 @@ module.exports = class BattleManager {
 
           // Take this opportunity to cleanup for dead people
           for (let i = 0; i < this.graveyard.length; i++) {
-            this.cleanupEffects(this.graveyard[i], effective.players.concat(effective.enemies));
+            this.worldManager.cleanupEffects(this.graveyard[i], effective.players
+              .concat(effective.enemies)
+              .concat(_.without(this.worldManager.getWorldEntities(), ...effective.enemies)), this);
           }
           this.turn++;
         }
@@ -519,35 +523,6 @@ module.exports = class BattleManager {
     this.send(`${actionText} has been cancelled. What would you like to do?`, this.getIconsForActions(this.actionsForPlayer), true);
     this.state = 'SELECT_ABILITY';
     return false;
-  }
-
-  cleanupEffects (caster, charactersToCleanup) {
-    let characters = charactersToCleanup;
-    if (!characters) {
-      let effectiveChars = Util.getEffectiveCharacters(this.battlefield);
-      characters = effectiveChars.players.concat(effectiveChars.enemies);
-    }
-    characters.forEach(char => char.cleanupEffect(caster, this));
-    for (let i = 0; i < this.battlefieldEffects.length; i++) {
-      for (let j = this.battlefieldEffects[i].length - 1; j >= 0; j--) {
-        // Hmm, this looks familiar ...
-        let effect = this.battlefieldEffects[i][j];
-        if (effect.whoApplied === caster) {
-          if (effect.ticks === effect.currentTicks) {
-            // Expire the effect
-            if (effect.onRemoveBattlefield) {
-              effect.onRemoveBattlefield(this, caster);
-            }
-            this.battlefieldEffects[i].splice(j, 1);
-          } else {
-            if (effect.onTickBattlefield) {
-              effect.onTickBattlefield(this, caster);
-            }
-            effect.currentTicks++;
-          }
-        }
-      }
-    }
   }
 
   useAbility (ability, caster, targets) {
