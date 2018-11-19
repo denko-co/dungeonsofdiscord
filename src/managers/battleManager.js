@@ -3,20 +3,28 @@ const Abilities = require('../content/abilities.js');
 const _ = require('underscore');
 
 module.exports = class BattleManager {
-  constructor (worldManager, players, encounter) {
+  constructor (worldManager, players, encounter, battleTurnUser) {
     this.worldManager = worldManager;
     this.encounter = encounter;
     this.characterInFocus = null;
     this.actionsForPlayer = null;
     this.selectedAction = null;
     this.state = null;
-    this.queue = [];
     this.graveyard = [];
     this.fled = [];
-    let playerCopy = players.map(arr => arr.slice());
-    let enemyCopy = encounter.positions.map(arr => arr.slice());
-    this.battlefield = playerCopy.reverse().concat(enemyCopy);
-    this.battlefieldEffects = encounter.effects;
+
+    this.isTemporary = battleTurnUser !== undefined;
+    if (this.isTemporary) {
+      this.queue = [battleTurnUser];
+      this.battlefield = players; // Want to operate on the raw players array
+      this.battlefieldEffects = [[], [], []]; // :v)
+    } else {
+      this.queue = [];
+      let playerCopy = players.map(arr => arr.slice());
+      let enemyCopy = encounter.positions.map(arr => arr.slice());
+      this.battlefield = playerCopy.reverse().concat(enemyCopy);
+      this.battlefieldEffects = encounter.effects;
+    }
     this.turn = 0;
   }
 
@@ -28,40 +36,45 @@ module.exports = class BattleManager {
 
   performTurn (reactionInfo) {
     // If this method returns true, the battle is complete
+    // Will return 'CANCEL' if temporary and nothing happened
     if (!reactionInfo) {
-      let effective = Util.getEffectiveCharacters(this.battlefield);
-      // performTurn called not off an action, perform a game turn tick
+      if (this.isTemporary) {
+        if (this.queue.length === 0) return true; // Person made their turn, delet this
+      } else {
+        let effective = Util.getEffectiveCharacters(this.battlefield);
+        // performTurn called not off an action, perform a game turn tick
 
-      if (effective.players.length === 0) {
-        // All players are dead or fled! Oh no!
-        this.send('The battle is over! Game over man, game over!');
-        return true;
-      } else if (effective.enemies.length === 0) {
-        // All enemies are dead or fled! Hooray!
-        this.send('The battle is over! You win!');
-        return true;
-      }
-
-      // Cleanup all effects for the turn just gone
-      if (this.characterInFocus) {
-        this.cleanupEffects(this.characterInFocus, effective.players.concat(effective.enemies));
-      }
-
-      if (this.queue.length === 0) {
-        this.queue = Util.prepareQueue(effective.players, effective.enemies);
-
-        // Take this opportunity to cleanup for dead people
-        for (let i = 0; i < this.graveyard.length; i++) {
-          this.cleanupEffects(this.graveyard[i], effective.players.concat(effective.enemies));
+        if (effective.players.length === 0) {
+          // All players are dead or fled! Oh no!
+          this.send('The battle is over! Game over man, game over!');
+          return true;
+        } else if (effective.enemies.length === 0) {
+          // All enemies are dead or fled! Hooray!
+          this.send('The battle is over! You win!');
+          return true;
         }
-        this.turn++;
+
+        // Cleanup all effects for the turn just gone
+        if (this.characterInFocus) {
+          this.cleanupEffects(this.characterInFocus, effective.players.concat(effective.enemies));
+        }
+
+        if (this.queue.length === 0) {
+          this.queue = Util.prepareQueue(effective.players, effective.enemies);
+
+          // Take this opportunity to cleanup for dead people
+          for (let i = 0; i < this.graveyard.length; i++) {
+            this.cleanupEffects(this.graveyard[i], effective.players.concat(effective.enemies));
+          }
+          this.turn++;
+        }
       }
 
       // Now we have a queue with something in it, we can pop and evaluate
 
       let character = this.queue.shift();
       this.characterInFocus = character;
-      this.send(Util.getDisplayName(character) + ', you\'re up!');
+      if (!this.isTemporary) this.send(Util.getDisplayName(character) + ', you\'re up!');
       if (character.controller) {
         // Hand to the player to do an action, give them options.
         let validActions = this.getValidActions(character);
@@ -132,6 +145,9 @@ module.exports = class BattleManager {
               let giftables = Util.getNumberedList(chosen.items);
               this.send('What item would you like to give?\n' + giftables.msg, giftables.icons, true);
               this.state = 'SELECT_GIVE';
+            } else if (options[0] === '⬅') {
+              // They are cancelling, end this temp combat
+              return 'CANCEL';
             } else {
               // Option selected, slam it
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
@@ -386,9 +402,9 @@ module.exports = class BattleManager {
 
     // Can always move (might be blocked by effects but in premise)
     actionList.push({action: Abilities.getAbility('Move'), item: null, targets: null});
-    // Can only run away if in position 1, or position 6 for enemies (and even then...)
+    // Can only run away if in position 1, or position 6 for enemies (and even then...) AND we're in a real fight
     let charPos = this.getCharacterLocation(char).arrayPosition;
-    if ((charPos === 0 && char.controller) || (charPos === 5 && !char.controller)) {
+    if (((charPos === 0 && char.controller) || (charPos === 5 && !char.controller)) && !this.isTemporary) {
       actionList.push({action: Abilities.getAbility('Flee'), item: null, targets: null});
     }
 
@@ -404,6 +420,10 @@ module.exports = class BattleManager {
 
     // Can always pass
     actionList.push({action: Abilities.getAbility('Pass'), item: null, targets: null});
+
+    // If this is not a real combat, give them a chance to opt out
+    if (this.isTemporary) actionList.push({action: Abilities.getAbility('Return'), item: null, targets: null});
+
     return actionList;
   }
 
@@ -581,15 +601,17 @@ module.exports = class BattleManager {
         });
       }
     }
-    [dead, fled].forEach(arr => {
-      text += (arr === dead ? '*Graveyard:* ' : '*Fled:* ');
-      if (arr.length === 0) text += no;
-      else {
-        let people = arr.map(char => Util.getDisplayName(char));
-        text += Util.capitalise(Util.formattedList(Util.reduceList(people)));
-      }
-      text += '\n';
-    });
+    if (!this.isTemporary) {
+      [dead, fled].forEach(arr => {
+        text += (arr === dead ? '*Graveyard:* ' : '*Fled:* ');
+        if (arr.length === 0) text += no;
+        else {
+          let people = arr.map(char => Util.getDisplayName(char));
+          text += Util.capitalise(Util.formattedList(Util.reduceList(people)));
+        }
+        text += '\n';
+      });
+    }
     return text;
   }
 

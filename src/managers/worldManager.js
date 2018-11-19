@@ -77,6 +77,9 @@ module.exports = class WorldManager {
               let directions = Util.getNumberedList(this.currentRoomActions.actions.move.map(direction => Util.capitalise(direction)));
               this.send('Which direction would you like to move the party in?\n' + directions.msg, directions.icons, true);
               this.state = 'SELECT_MOVE';
+            } else if (options[0] === '➡') {
+              // They want to swap to battle context
+              this.gameManager.currentBattle = new BattleManager(this, this.gameManager.players, null, this.characterInFocus);
             }
             break;
           case 'SELECT_TALK':
@@ -341,7 +344,7 @@ module.exports = class WorldManager {
         icons.push(iconMap[prop]);
       }
     }
-    icons.push('🤷', '✅'); // Can always pass!
+    icons.push('🤷', '➡', '✅'); // Can always pass, can always swap to battle mode
 
     return {actions: actionList, icons: icons};
   }

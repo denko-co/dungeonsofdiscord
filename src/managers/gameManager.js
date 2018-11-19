@@ -105,10 +105,15 @@ module.exports = class GameManager {
       if (this.currentBattle) {
         lastActivityResult = this.currentBattle.performTurn(battleCreated ? null : reactionInfo);
         if (lastActivityResult) { // If the battle is now over
-          this.battleNumber++;
+          if (!this.currentBattle.isTemporary) {
+            this.battleNumber++;
+            lastActivityResult = this.world.onBattleComplete(); // World should exist here
+            if (!lastActivityResult) return this.sendAll(); // We are back in conversation, let the person respond
+          } else {
+            if (lastActivityResult === 'CANCEL') this.world.queue.unshift(this.world.characterInFocus);
+            this.world.characterInFocus = null;
+          }
           this.currentBattle = null;
-          lastActivityResult = this.world.onBattleComplete(); // World should exist here
-          if (!lastActivityResult) return this.sendAll(); // We are back in conversation, let the person respond
         }
       }
 

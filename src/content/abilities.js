@@ -24,6 +24,12 @@ let abilities = {
     type: ['MOVE_FORWARD', 'MOVE_BACKWARD'],
     icon: '↔'
   },
+  return: {
+    name: 'Return',
+    description: 'Special ability for going back to the world manager context',
+    type: ['RETURN'],
+    icon: '⬅'
+  },
   give: {
     name: 'Give',
     description: 'Special ability for giving an item',
