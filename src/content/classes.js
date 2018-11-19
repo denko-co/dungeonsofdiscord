@@ -23,7 +23,8 @@ let classes = {
       'Healing Hands'
     ],
     effects: [
-      'Flesh Heal'
+      'Flesh Heal',
+      'Battle Buff'
     ]
   },
   loneRanger: {

@@ -43,29 +43,47 @@ module.exports = class Character {
     this.currenthp += modifiedAmount;
   }
 
-  dealDamage (amount, source, manager, reason) {
+  dealDamage (amount, source, manager, ability, reason) {
     manager.send(Util.getDisplayName(this) + ' takes ' + amount + ' damage' + (reason || '') + '!');
+
     let damageModifiers = this.getListeningEffects(manager, 'onRecieveDamage');
     let modifiedDamage = damageModifiers.reduce((currentDamage, ele) => {
-      let newDamage = ele.onRecieveDamage(currentDamage, this, source);
+      let newDamage = ele.onRecieveDamage(currentDamage, this, source, ability);
       return newDamage < 0 ? 0 : newDamage;
     }, amount);
-    this.changeHp(-amount, manager, damageModifiers, -modifiedDamage);
+
+    let dealDamageModifiers = source.getListeningEffects(manager, 'onDealDamage');
+    modifiedDamage = dealDamageModifiers.reduce((currentDamage, ele) => {
+      let newDamage = ele.onDealDamage(currentDamage, source, this, ability);
+      return newDamage < 0 ? 0 : newDamage;
+    }, modifiedDamage);
+
+    modifiedDamage = Math.floor(modifiedDamage);
+    this.changeHp(-amount, manager, damageModifiers.concat(dealDamageModifiers), -modifiedDamage);
     // Handle death and on damage effects
     if (this.currenthp <= 0) {
       this.alive = false;
     }
   }
 
-  heal (amount, source, manager, reason) {
+  heal (amount, source, manager, ability, reason) {
     amount = amount + this.currenthp > this.hp ? this.hp - this.currenthp : amount;
     manager.send(Util.getDisplayName(this) + ' is healed for ' + amount + ' health' + (reason || '') + '!');
+
     let healingModifiers = this.getListeningEffects(manager, 'onReceiveHealing');
     let modifiedHealing = healingModifiers.reduce((currentHealing, ele) => {
-      let newHealing = ele.onReceiveHealing(currentHealing, this, source);
+      let newHealing = ele.onReceiveHealing(currentHealing, this, source, ability);
       return newHealing + this.currenthp > this.hp ? this.hp - this.currenthp : newHealing;
     }, amount);
-    this.changeHp(amount, manager, healingModifiers, modifiedHealing);
+
+    let giveHealingModifiers = source.getListeningEffects(manager, 'onGiveHealing');
+    modifiedHealing = giveHealingModifiers.reduce((currentHealing, ele) => {
+      let newHealing = ele.onGiveHealing(currentHealing, source, this, ability);
+      return newHealing + this.currenthp > this.hp ? this.hp - this.currenthp : newHealing;
+    }, modifiedHealing);
+
+    modifiedHealing = Math.floor(modifiedHealing);
+    this.changeHp(amount, manager, healingModifiers.concat(giveHealingModifiers), modifiedHealing);
     return modifiedHealing;
   }
 
@@ -144,7 +162,7 @@ module.exports = class Character {
     });
     text += '*Character Effects:* ' + (this.effects.length === 0 ? '-' : '') + '\n';
     this.effects.forEach(effect => {
-      text += effect.getEffectDetails() + '\n';
+      text += effect.getEffectDetails(this) + '\n';
     });
     if (battleManager) {
       let location = battleManager.getCharacterLocation(this);

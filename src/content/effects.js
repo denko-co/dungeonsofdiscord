@@ -14,7 +14,7 @@ let effects = {
     },
     properties: {
       onApply (manager, caster, target, ability) {
-        target.dealDamage(this.getDamage(), caster, manager);
+        target.dealDamage(this.getDamage(), caster, manager, ability);
       }
     }
   },
@@ -28,7 +28,7 @@ let effects = {
       creatures: 'array'
     },
     properties: {
-      onRecieveDamage (dmg, target, source) {
+      onRecieveDamage (dmg, target, source, ability) {
         // Use real name to correctly identify type
         return this.creatures.includes(source.name) ? 0 : this.baseReduce(dmg);
       }
@@ -113,8 +113,19 @@ let effects = {
     properties: {
       onTick (manager, source, target) {
         // if (source.currenthp !== source.hp) {
-        source.heal(3, source, manager, ' from Flesh Heal');
+        source.heal(3, source, manager, null, ' from Flesh Heal');
         // }
+      }
+    }
+  },
+  battleBuff: {
+    name: 'Battle Buff',
+    description: 'When dealing damage with a range 1 ability, buff it by 20%',
+    flavour: 'You\'d think this sort of thing would be defensive...',
+    ticks: null,
+    properties: {
+      onDealDamage (dmg, target, source, ability) {
+        return ability.range === 1 ? dmg * 1.2 : dmg;
       }
     }
   },
@@ -129,8 +140,8 @@ let effects = {
     },
     properties: {
       onApply (manager, caster, target, ability) {
-        caster.dealDamage(this.getDamage(), caster, manager);
-        target.heal(this.getHealing(), caster, manager);
+        caster.dealDamage(this.getDamage(), caster, manager, ability);
+        target.heal(this.getHealing(), caster, manager, ability);
       }
     }
   }

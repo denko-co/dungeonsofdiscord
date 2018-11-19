@@ -26,7 +26,7 @@ module.exports = class Item {
     if (this.effects.length !== 0) {
       text += '*' + this.displayName + 'effects:* \n';
       this.effects.forEach(effect => {
-        text += effect.getEffectDetails() + '\n';
+        text += effect.getEffectDetails(this.owner) + '\n';
       });
     }
 

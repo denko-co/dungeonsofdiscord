@@ -21,11 +21,11 @@ module.exports = class Effect {
     }
   }
 
-  getEffectDetails () {
+  getEffectDetails (owner) {
     let text = '**' + this.displayName + '**' + ' ' + this.description + ' ';
     let info = '(';
     if (this.ticks === null) {
-      info += 'permanent effect';
+      info += owner === this.whoApplied ? 'passive' : 'permanent effect';
     } else {
       if (this.ticks === 0) {
         info += 'resolves immediately';
@@ -38,7 +38,7 @@ module.exports = class Effect {
         }
       }
     }
-    if (this.whoApplied) {
+    if (this.whoApplied && owner !== this.whoApplied) {
       info += ', applied by ' + Util.getDisplayName(this.whoApplied);
     }
     info += ')';
