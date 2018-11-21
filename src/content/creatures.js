@@ -63,8 +63,7 @@ let creatures = {
     ],
     logic: {
       state: {
-        undamagedTurns: 0,
-        shieldGiven: false
+        undamagedTurns: 0
       },
       talkState: 'start',
       onTalk: {

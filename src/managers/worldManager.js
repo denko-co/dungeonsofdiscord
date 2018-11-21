@@ -29,12 +29,24 @@ module.exports = class WorldManager {
     // Bounce if the react is not from the right person
     if (this.characterInFocus && this.characterInFocus.controller !== user.id) return;
     do { // monkas
-      // Validate queue
-      if (this.queue.length === 0) {
-        this.queue = Util.prepareQueue(Util.getEffectiveCharacters(this.gameManager.players).players); // :v)
-      }
       if (this.characterInFocus === null) {
-        this.characterInFocus = this.queue.shift(); // Need to null out before going for another loop
+        while (this.characterInFocus === null) {
+          this.characterInFocus = this.queue.shift(); // Need to null out before going for another loop
+          if (this.characterInFocus === undefined) {
+            // We just shifted an empty array, so that means the last person in the list is dead or we're starting anew
+            // Make a new list, check for survivors...
+            this.queue = Util.prepareQueue(Util.getEffectiveCharacters(this.gameManager.players).players); // :v)
+            if (this.queue.every(player => !player.alive)) {
+              return true; // ONLY EVER RETURN TRUE IF EVERYONE IS DEAD
+            } else {
+              // Set to null, let the loop handle it
+              this.characterInFocus = null;
+            }
+          } else if (!this.characterInFocus.alive) {
+            // Not alive, clean them up
+            this.cleanupCurrentCharacter();
+          }
+        }
         this.currentRoomActions = this.getRoomValidActions(this.currentRoom, this.characterInFocus);
         this.currentOptionInfo = null;
         this.send(Util.getDisplayName(this.characterInFocus) + ', you\'re up!');
@@ -236,16 +248,15 @@ module.exports = class WorldManager {
   }
 
   onBattleComplete () {
-    if (this.state.startsWith('SELECT_TALK')) {
+    if (this.characterInFocus.alive && this.state.startsWith('SELECT_TALK')) {
       let person = this.currentOptionInfo.person;
       if (person.alive) {
         person.logic.talkState = person.logic.onTalk[person.logic.talkState].result[2];
         this.handleConversation(person);
-        return !this.state.startsWith('SELECT_TALK');
+        if (this.state.startsWith('SELECT_TALK')) return false;
       }
-    } else {
-      this.cleanupCurrentCharacter();
     }
+    this.cleanupCurrentCharacter();
     return true;
   }
 
@@ -277,7 +288,7 @@ module.exports = class WorldManager {
         this.cleanupCurrentCharacter();
         break;
       case 'BATTLE_START':
-        this.gameManager.currentBattle = new BattleManager(this, this.gameManager.players, Encounters.getEncounter(result[0]));
+        this.gameManager.currentBattle = new BattleManager(this, this.gameManager.players, Encounters.getEncounter(result[0], null, this.currentRoom.entities));
         this.gameManager.currentBattle.initialise();
         break;
     }
@@ -325,7 +336,7 @@ module.exports = class WorldManager {
       'move': '🗺'
     };
     room.entities.forEach(entity => {
-      if (!entity.logic) return;
+      if (!entity.logic || (entity.alive === false)) return;
       for (let prop in actionList) {
         if (entity.logic[prop]) actionList[prop].push(entity);
       }

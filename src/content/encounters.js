@@ -27,20 +27,30 @@ let encounters = {
   }
 };
 
-exports.getEncounter = function (name, displayName) {
+exports.getEncounter = function (name, displayName, entities) {
   let encounterDetails = encounters[Util.convertName(name)];
   if (!encounterDetails) {
     throw new Error(`Encounter with name ${name} not found!`);
   }
 
-  for (let pos in encounterDetails.positions) {
-    for (let i = 0; i < encounterDetails.positions[pos].length; i++) {
-      encounterDetails.positions[pos][i] = Creatures.getCreature(encounterDetails.positions[pos][i]);
+  let positionsCopy = Util.clone(encounterDetails.positions);
+
+  for (let pos in positionsCopy) {
+    for (let i = 0; i < positionsCopy[pos].length; i++) {
+      let entity = null;
+      if (entities) {
+        for (let j = 0; j < entities.length; j++) {
+          if (entities[j].name === positionsCopy[pos][i]) {
+            entity = entities.slice(j, 1)[0];
+            break;
+          }
+        }
+      }
+      positionsCopy[pos][i] = entity || Creatures.getCreature(positionsCopy[pos][i]);
     }
   }
-
   // Put rewards here when we decide how to do drops
 
-  let encounterToAdd = new Encounter(encounterDetails.name, displayName || encounterDetails.name, encounterDetails.description, encounterDetails.positions, encounterDetails.effects, encounterDetails.rewards);
+  let encounterToAdd = new Encounter(encounterDetails.name, displayName || encounterDetails.name, encounterDetails.description, positionsCopy, encounterDetails.effects, encounterDetails.rewards);
   return encounterToAdd;
 };

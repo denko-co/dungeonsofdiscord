@@ -10,6 +10,7 @@ module.exports = class BattleManager {
     this.actionsForPlayer = null;
     this.selectedAction = null;
     this.state = null;
+    // Not used for temporary battles
     this.graveyard = [];
     this.fled = [];
 
@@ -42,7 +43,7 @@ module.exports = class BattleManager {
       // performTurn called not off an action, perform a game turn tick
 
       // Cleanup all effects for the turn just gone
-      if (this.characterInFocus) {
+      if (this.characterInFocus && !this.isTemporary) {
         this.worldManager.cleanupEffects(this.characterInFocus, effective.players
           .concat(effective.enemies)
           .concat(_.without(this.worldManager.getWorldEntities(), ...effective.enemies)), this);
@@ -63,12 +64,14 @@ module.exports = class BattleManager {
         if (this.queue.length === 0) {
           this.queue = Util.prepareQueue(effective.players, effective.enemies);
 
-          // Take this opportunity to cleanup for dead people
-          for (let i = 0; i < this.graveyard.length; i++) {
-            this.worldManager.cleanupEffects(this.graveyard[i], effective.players
-              .concat(effective.enemies)
-              .concat(_.without(this.worldManager.getWorldEntities(), ...effective.enemies)), this);
-          }
+          // Take this opportunity to cleanup for dead and fled people
+          [this.graveyard, this.fled].forEach(arr => {
+            for (let i = 0; i < arr.length; i++) {
+              this.worldManager.cleanupEffects(arr[i], effective.players
+                .concat(effective.enemies)
+                .concat(_.without(this.worldManager.getWorldEntities(), ...effective.enemies)), this);
+            }
+          });
           this.turn++;
         }
       }
@@ -473,15 +476,23 @@ module.exports = class BattleManager {
   }
 
   removeFromBattle (char, reason) {
-    let location = this.getCharacterLocation(char);
-    this.battlefield[location.arrayPosition].splice(location.arraySubposition, 1);
-    switch (reason) {
-      case 'DEAD':
-        this.graveyard.push(char);
-        break;
-      case 'FLED':
-        this.fled.push(char);
-        break;
+    // Remove from queue (if they are in there)
+    let queuePos = this.queue.indexOf(char);
+    if (queuePos > -1) {
+      this.queue.splice(queuePos, 1);
+    }
+    // Remove from battlefield if this is not a fake battle
+    if (!this.isTemporary) {
+      let location = this.getCharacterLocation(char);
+      this.battlefield[location.arrayPosition].splice(location.arraySubposition, 1);
+      switch (reason) {
+        case 'DEAD':
+          this.graveyard.push(char);
+          break;
+        case 'FLED':
+          this.fled.push(char);
+          break;
+      }
     }
   }
 
@@ -548,6 +559,11 @@ module.exports = class BattleManager {
         } else {
           target.effects.push(effect);
         }
+      }
+      // check if caster survived the ordeal (and we haven't death checked them yet)
+      if (!targets.includes(caster) && !caster.alive) {
+        this.send(Util.getDisplayName(caster) + ' has been slain!');
+        this.removeFromBattle(caster, 'DEAD');
       }
     }
     // Now that we have used the ability, bump its uses

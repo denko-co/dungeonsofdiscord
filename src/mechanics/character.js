@@ -61,7 +61,7 @@ module.exports = class Character {
     modifiedDamage = Math.floor(modifiedDamage);
     this.changeHp(-amount, manager, damageModifiers.concat(dealDamageModifiers), -modifiedDamage);
     // Handle death and on damage effects
-    if (this.currenthp <= 0) {
+    if (this.alive && this.currenthp <= 0) {
       this.alive = false;
     }
   }
@@ -84,6 +84,10 @@ module.exports = class Character {
 
     modifiedHealing = Math.floor(modifiedHealing);
     this.changeHp(amount, manager, healingModifiers.concat(giveHealingModifiers), modifiedHealing);
+    // Raise the dead!
+    if (!this.alive && this.currenthp > 0) {
+      this.alive = true;
+    }
     return modifiedHealing;
   }
 

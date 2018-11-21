@@ -110,8 +110,13 @@ module.exports = class GameManager {
             lastActivityResult = this.world.onBattleComplete(); // World should exist here
             if (!lastActivityResult) return this.sendAll(); // We are back in conversation, let the person respond
           } else {
-            if (lastActivityResult === 'CANCEL') this.world.queue.unshift(this.world.characterInFocus);
-            this.world.characterInFocus = null;
+            if (lastActivityResult === 'CANCEL') {
+              // Didn't actually do anything!
+              this.world.queue.unshift(this.world.characterInFocus);
+              this.world.characterInFocus = null;
+            } else {
+              this.world.cleanupCurrentCharacter();
+            }
           }
           this.currentBattle = null;
         }
@@ -120,15 +125,22 @@ module.exports = class GameManager {
       if (this.currentBattle) return this.sendAll(); // Stop us taking turns over and over and over
 
       // Battle stuff is all done (for now)
-      // Don't grab a result here because THE FUN NEVER ENDS
-      this.world.performTurn(reactionInfo);
-      battleCreated = this.currentBattle !== null;
+      lastActivityResult = this.world.performTurn(reactionInfo);
+      if (lastActivityResult) {
+        // Everybody is dead. End the game and stop responding to input.
+        // Doesn't include DoT healing but we'll cross that bridge when we get to it.
+        this.send('Everyone is dead and nobody is around to heal you. The end! ;~;');
+        this.messageId = null;
+      } else {
+        battleCreated = this.currentBattle !== null;
+      }
     } while (battleCreated); // Only go back around if the gameManager has created a new battle
 
     return this.sendAll(); // All done!
   }
 
   handleMessage (message) {
+    if (!this.messageId) return;
     let command = message.content.substring(1).toLowerCase();
     let cmdSplit = command.match(/\S+/g) || [];
     if (this.currentBattle && (command === 'battle' || command === 'battlefield')) {
