@@ -20,8 +20,9 @@ let effects = {
   },
   flatBlock: {
     name: 'Flat Block',
-    description: 'Reduces incoming damage by a *flat* amount. Will resolve immediately.',
+    description: 'Reduces incoming damage by a *flat* amount.',
     flavour: 'Block it very hard!',
+    ticks: 1,
     required: {
       baseReduce: 'function'
     },

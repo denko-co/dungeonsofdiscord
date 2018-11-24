@@ -148,7 +148,7 @@ module.exports = class BattleManager {
               // Gifting! Giving? Choose an item first
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
               this.selectedAction = chosen;
-              let giftables = Util.getNumberedList(chosen.items);
+              let giftables = Util.getNumberedList(this.characterInFocus.items);
               this.send('What item would you like to give?\n' + giftables.msg, giftables.icons, true);
               this.state = 'SELECT_GIVE';
             } else if (options[0] === '⬅') {
@@ -157,21 +157,71 @@ module.exports = class BattleManager {
             } else {
               // Option selected, slam it
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
-              this.selectedAction = chosen;
-              let targets = Util.getNumberedList(chosen.targets);
-              this.send('Please choose ' + chosen.action.targets.number + ' target' + (chosen.action.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
-              this.state = 'SELECT_TARGET';
+              if (chosen.length) {
+                // This icon matches mutiple items or abilities (usually will be 2 of the same item)
+              } else {
+                // If there is an item, check if there is mutiple abilities
+                this.selectedAction = chosen;
+                if (this.selectedAction.item) {
+                  let abilityMap = this.selectedAction.abilities.map(abilObj => abilObj.ability);
+                  let abilityIcons = abilityMap.map(ability => ability.icon);
+                  let abilityMsg = abilityMap.map(ability => ability.getAbilityDetails()).join('\n');
+                  this.selectedAction.abilitiesText = {icons: abilityIcons, msg: abilityMsg};
+                  let iconsToSend = abilityIcons.slice();
+                  iconsToSend.push('✅', '🚫');
+                  this.send('What ability would you like to use?\n' + abilityMsg, iconsToSend, true);
+                  this.state = 'SELECT_ITEM_ABILITY';
+                } else {
+                  // Just an ability, jump through to target code
+                  let targets = Util.getNumberedList(this.selectedAction.targets);
+                  this.send('Please choose ' + this.selectedAction.ability.targets.number + ' target' + (this.selectedAction.ability.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
+                  this.state = 'SELECT_TARGET';
+                }
+              }
+            }
+            return false;
+          case 'SELECT_ITEM_ABILITY':
+            if (reactionInfo.react === '🚫') {
+              // Bounce back to action select
+              return this.cancelAction('Ability selection cancelled');
+            } else if (reactionInfo.react === '✅') {
+              // Ability picked, you know the drill.
+              let abilities = Util.getSelectedOptions(reactions, this.selectedAction.abilitiesText.icons, reactionInfo.user.id);
+              if (abilities.length === 0) {
+                this.send('Please select an item ability.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else if (abilities.length > 1) {
+                this.send('Please select only one item abilit - that\'s not how this works!');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else {
+                // Got it, pick it
+                let abilityObj = this.selectedAction.abilities.find(abilObj => abilObj.ability.icon === abilities[0]);
+                this.selectedAction.ability = abilityObj.ability;
+                this.selectedAction.targets = abilityObj.targets;
+                // Target code repeat
+                let targets = Util.getNumberedList(abilityObj.targets);
+                this.send('Please choose ' + abilityObj.ability.targets.number + ' target' + (abilityObj.ability.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
+                this.state = 'SELECT_TARGET';
+              }
             }
             return false;
           case 'SELECT_TARGET':
             if (reactionInfo.react === '🚫') {
-              // Bounce back to action select
-              return this.cancelAction('Targeting');
+              if (this.selectedAction.item) {
+                // Bounce back to ability selection
+                let abilityOptions = Util.getNumberedList(this.selectedAction.abilities.map(abilObj => abilObj.ability));
+                this.send('Targeting cancelled. What ability would you like to use?\n' + abilityOptions.msg, abilityOptions.icons, true);
+                this.state = 'SELECT_ITEM_ABILITY';
+                return false;
+              } else {
+                // Bounce back to action select
+                return this.cancelAction('Targeting');
+              }
             } else if (reactionInfo.react === '✅') {
               // Let's go get the targets...
               let targets = Util.getSelectedOptions(reactions, Util.getNumberedList(this.selectedAction.targets, true).icons, reactionInfo.user.id);
               targets = Util.getEmojiNumbersAsInts(targets);
-              if (targets.length > this.selectedAction.action.targets.number || targets.length === 0) {
+              if (targets.length > this.selectedAction.ability.targets.number || targets.length === 0) {
                 // Not enough / too many targets
                 this.send('Pls select a valid number of targets (at least 1).');
                 reactionInfo.messageReaction.remove(reactionInfo.user);
@@ -182,7 +232,7 @@ module.exports = class BattleManager {
                 });
 
                 let item = this.selectedAction.item;
-                let ability = this.selectedAction.action;
+                let ability = this.selectedAction.ability;
                 if (item && item.onUse.before) {
                   item.onUse.before(ability, this);
                 }
@@ -238,7 +288,7 @@ module.exports = class BattleManager {
             if (reactionInfo.react === '🚫') {
               this.cancelAction('Giving');
             } else if (reactionInfo.react === '✅') {
-              let giftables = Util.getNumberedList(this.selectedAction.items, true);
+              let giftables = Util.getNumberedList(this.characterInFocus.items, true);
               giftables = Util.getSelectedOptions(reactions, giftables.icons, reactionInfo.user.id);
               if (giftables.length === 0) {
                 this.send('Please select an item to give.');
@@ -248,7 +298,7 @@ module.exports = class BattleManager {
                 reactionInfo.messageReaction.remove(reactionInfo.user);
               } else {
                 let giftIndex = Util.getEmojiNumbersAsInts(giftables);
-                let gift = this.selectedAction.items[giftIndex - 1];
+                let gift = this.characterInFocus.items[giftIndex - 1];
                 this.selectedAction.item = gift;
                 // Give them choice on who to gift
                 // I swap allies <-> team depending on whether I'm testing or not
@@ -298,16 +348,16 @@ module.exports = class BattleManager {
     }
   }
 
-  getAbilityByIcon (actionList, icon) {
-    return actionList.find(actionItem => {
-      return actionItem.action.icon === icon;
-    });
+  getAbilityByIcon (actions, icon) {
+    let abils = actions.items.filter(itemObj => itemObj.item.icon === icon)
+      .concat(actions.abilities.filter(abilObj => abilObj.ability.icon === icon));
+    return abils.length === 1 ? abils[0] : abils;
   }
 
-  getIconsForActions (actionList, onlyIcons) {
-    let icons = actionList.map(actionItem => {
-      return actionItem.action.icon;
-    });
+  getIconsForActions (actions, onlyIcons) {
+    let icons = actions.items.map(itemObj => itemObj.item.icon)
+      .concat(actions.abilities.map(abilObj => abilObj.ability.icon));
+
     if (!onlyIcons) {
       icons.push('✅');
     }
@@ -393,27 +443,44 @@ module.exports = class BattleManager {
   }
 
   getValidActions (char) {
-    let actionList = [];
-    let abilitiesToCheck = char.abilities.map(abil => { return {ability: abil, item: null}; });
-
-    char.items.forEach(item => {
-      abilitiesToCheck = abilitiesToCheck.concat(item.abilities.map(abil => { return {ability: abil, item: item}; }));
+    let actions = {
+      items: [],
+      abilities: []
+    };
+    char.items.filter(item => item.equipped).forEach(item => {
+      let itemObject = null;
+      item.abilities.forEach(ability => {
+        // Check if the ability can target something. If it's not null, add it to the pool
+        let targets = this.getValidTargets(char, ability);
+        if (targets && targets.length !== 0) {
+          let abilityObj = {
+            ability: ability,
+            targets: targets
+          };
+          if (itemObject) {
+            itemObject.abilities.push(abilityObj);
+          } else {
+            itemObject = {item: item, abilities: [abilityObj]};
+          }
+        }
+      });
+      if (itemObject) actions.items.push(itemObject);
     });
 
-    abilitiesToCheck.forEach(abilityObj => {
-      // Check if the ability can target something. If it's not null, add it to the pool
-      let targets = this.getValidTargets(char, abilityObj.ability);
+    char.abilities.forEach(ability => {
+      // As before for item abilities
+      let targets = this.getValidTargets(char, ability);
       if (targets && targets.length !== 0) {
-        actionList.push({action: abilityObj.ability, item: abilityObj.item, targets: targets});
+        actions.abilities.push({ability: ability, targets: targets});
       }
     });
 
     // Can always move (might be blocked by effects but in premise)
-    actionList.push({action: Abilities.getAbility('Move'), item: null, targets: null});
+    actions.abilities.push({ability: Abilities.getAbility('Move'), targets: null});
     // Can only run away if in position 1, or position 6 for enemies (and even then...) AND we're in a real fight
     let charPos = this.getCharacterLocation(char).arrayPosition;
     if (((charPos === 0 && char.controller) || (charPos === 5 && !char.controller)) && !this.isTemporary) {
-      actionList.push({action: Abilities.getAbility('Flee'), item: null, targets: null});
+      actions.abilities.push({ability: Abilities.getAbility('Flee'), targets: null});
     }
 
     // If there's a char provided and they have loot, let them give stuff
@@ -422,17 +489,17 @@ module.exports = class BattleManager {
       let targets = this.getValidTargets(char, giveAbility);
       if (targets && targets.length !== 0) {
         // Note that this is > items, item gets set when we select one
-        actionList.push({action: Abilities.getAbility('Give'), items: char.items.slice(), targets: targets});
+        actions.abilities.push({ability: Abilities.getAbility('Give'), targets: targets});
       }
     }
 
     // Can always pass
-    actionList.push({action: Abilities.getAbility('Pass'), item: null, targets: null});
+    actions.abilities.push({ability: Abilities.getAbility('Pass'), targets: null});
 
     // If this is not a real combat, give them a chance to opt out
-    if (this.isTemporary) actionList.push({action: Abilities.getAbility('Return'), item: null, targets: null});
+    if (this.isTemporary) actions.abilities.push({ability: Abilities.getAbility('Return'), targets: null});
 
-    return actionList;
+    return actions;
   }
 
   getValidTargets (char, ability) {

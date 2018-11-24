@@ -89,7 +89,9 @@ exports.getClass = function (name, playerId, displayName) {
   let items = [];
   if (classDetails.itemNames) {
     for (let i = 0; i < classDetails.itemNames.length; i++) {
-      items.push(Items.getItem(classDetails.itemNames[i]));
+      let itemToEquip = Items.getItem(classDetails.itemNames[i]);
+      itemToEquip.equipped = true;
+      items.push(itemToEquip);
     }
   }
 

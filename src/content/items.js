@@ -10,7 +10,9 @@ let items = {
     flavour: 'Some say that even a simple sword can slice arrows, in the right hands.',
     abilityNames: [
       'Whack'
-    ]
+    ],
+    icon: '⚔',
+    slot: 'hand'
   },
   trainingShield: {
     name: 'Training Shield',
@@ -18,7 +20,9 @@ let items = {
     flavour: 'Who\'s doing the training, you, or the dummy?',
     abilityNames: [
       'Dummy Defense'
-    ]
+    ],
+    icon: '🛡',
+    slot: 'hand'
   },
   spikedShield: {
     name: 'Spiked Shield',
@@ -27,7 +31,9 @@ let items = {
     abilityNames: [
       ['Whack', 'Bash'],
       'Block'
-    ]
+    ],
+    icon: '⚙',
+    slot: 'hand'
   },
   bottledAnxiety: {
     name: 'Bottled Anxiety',
@@ -36,6 +42,8 @@ let items = {
     abilityNames: [
       'Make Worried'
     ],
+    icon: '😰',
+    slot: 'hand',
     onUse: {
       before (ability, battleManager) {
         if (ability.maxUses.game - 1 === ability.uses.game) {
@@ -69,6 +77,6 @@ exports.getItem = function (name, displayName) {
       }
     }
   }
-  let itemToAdd = new Item(itemDetails.name, displayName || itemDetails.name, itemDetails.description, itemDetails.flavour, abilities, itemDetails.effects, itemDetails.onUse);
+  let itemToAdd = new Item(itemDetails.name, displayName || itemDetails.name, itemDetails.description, itemDetails.flavour, itemDetails.icon, itemDetails.slot, abilities, itemDetails.effects, itemDetails.onUse);
   return itemToAdd;
 };

@@ -1,17 +1,20 @@
 const Util = require('../util/util.js');
 
 module.exports = class Item {
-  constructor (name, displayName, description, flavour, abilities, effects, onUse) {
+  constructor (name, displayName, description, flavour, icon, slot, abilities, effects, onUse) {
     this.name = name;
     this.displayName = displayName;
     this.description = description;
     this.flavour = flavour;
+    this.icon = icon;
+    this.slot = slot;
     this.abilities = abilities || [];
     this.effects = effects || [];
     this.onUse = Util.clone(onUse) || {};
     if (this.onUse.before) this.onUse.before = this.onUse.before.bind(this);
     if (this.onUse.after) this.onUse.after = this.onUse.after.bind(this);
     this.owner = null;
+    this.equipped = false;
   }
 
   getItemDetails () {
