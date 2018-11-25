@@ -7,6 +7,7 @@ module.exports = class Room {
     this.entities = entities || [];
     this.onEnter = onEnter ? onEnter.bind(this) : onEnter;
     this.onExit = onExit ? onExit.bind(this) : onExit;
+    this.floorItems = [];
     this.visited = false;
   }
 };

@@ -151,6 +151,10 @@ module.exports = class BattleManager {
               let giftables = Util.getNumberedList(this.characterInFocus.items);
               this.send('What item would you like to give?\n' + giftables.msg, giftables.icons, true);
               this.state = 'SELECT_GIVE';
+            } else if (options[0] === '🔄') {
+              // Move to method to avoid long pasta if we need to bounce back.
+              this.doSwapLogic();
+              this.state = 'EQUIP_SELECT';
             } else if (options[0] === '⬅') {
               // They are cancelling, end this temp combat
               return 'CANCEL';
@@ -178,6 +182,97 @@ module.exports = class BattleManager {
                   this.state = 'SELECT_TARGET';
                 }
               }
+            }
+            return false;
+          case 'EQUIP_SELECT':
+            if (reactionInfo.react === '🚫') {
+              // Bounce back to action select
+              return this.cancelAction(this.selectedAction.equipping ? 'Equip' : 'Unequip');
+            } else if (reactionInfo.react === '✅') {
+              let equipSelect = Util.getSelectedOptions(reactions, _.without(this.selectedAction.itemList.icons, '🚫', '✅'), reactionInfo.user.id);
+              if (equipSelect.length === 0) {
+                this.send('Please select an option.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else if (equipSelect.length > 1) {
+                this.send('Please select only one option.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else {
+                let chosen = equipSelect[0];
+                if (chosen === '➡' || chosen === '⬅') {
+                  let opposite = chosen === '➡' ? '⬅' : '➡';
+                  let equippedList = this.characterInFocus.items.filter(item =>
+                    this.selectedAction.equipping ? item.equipped : !item.equipped);
+                  let msg = chosen === '➡'
+                    ? 'What item would you like to unequip? To swap out for an item in your inventory, press ⬅\n'
+                    : 'Which item would you like to equip? To unequip an item without equipping a new one, press ➡\n';
+                  let currentList = Util.getNumberedList(equippedList);
+                  let tickIndex = currentList.icons.indexOf('✅');
+                  currentList.icons.splice(tickIndex, 0, opposite);
+                  this.selectedAction = {items: equippedList, itemList: currentList, equipping: chosen !== '➡'};
+                  this.send(msg + currentList.msg, currentList.icons, true);
+                } else {
+                  let equipIndex = Util.getEmojiNumbersAsInts(equipSelect);
+                  let equipItem = this.selectedAction.items[equipIndex - 1];
+                  if (this.selectedAction.equipping) {
+                    // What's in the slot?
+                    let inSlot = this.characterInFocus.items.filter(item => item.equipped && item.slot !== 'extra' && (item.slot === equipItem.slot || (equipItem.slot === 'hand2' && item.slot === 'hand')));
+                    if (inSlot.length === 0 || (inSlot.length === 1 && inSlot[0].slot === 'hand' && equipItem.slot === 'hand')) {
+                      // Can equip without issue
+                      equipItem.equipped = true;
+                      this.send('*' + Util.getDisplayName(equipItem) + '* equipped!');
+                      return this.performTurn();
+                    } else {
+                      this.selectedAction.item = equipItem;
+                      this.selectedAction.itemsToChoose = {items: inSlot};
+                      // Something will need to take the hit
+                      if (equipItem.slot !== 'hand') {
+                        // Dump hand
+                        let toUnequip = '*' + Util.formattedList(Util.reduceList(inSlot.map(item => Util.getDisplayName(item)))) + '*';
+                        this.send('To equip *' + Util.getDisplayName(equipItem) + '*, ' + toUnequip + ' must be unqeuipped. Are you sure?', ['✅', '🚫'], true);
+                      } else {
+                        // Choose one
+                        let itemSelect = Util.getNumberedList(inSlot);
+                        this.selectedAction.itemsToChoose.list = itemSelect;
+                        this.send('Which items do you want to unequip?\n' + itemSelect.msg, itemSelect.icons, true);
+                      }
+                      this.state = 'EQUIP_SELECT_ITEM';
+                    }
+                  } else {
+                    // Unequipping, doesn't require a second step.
+                    equipItem.equipped = false;
+                    this.send('*' + Util.getDisplayName(equipItem) + '* unequipped!');
+                    return this.performTurn();
+                  }
+                }
+              }
+            }
+            return false;
+          case 'EQUIP_SELECT_ITEM':
+            if (reactionInfo.react === '🚫') {
+              // Gross! Have to go back to the very first item select.
+              this.doSwapLogic('Unequip selection cancelled. ');
+              this.state = 'EQUIP_SELECT';
+            } else if (reactionInfo.react === '✅') {
+              let equipItem = this.selectedAction.item;
+              if (this.selectedAction.itemsToChoose.list) {
+                // Figure out which ones are getting the boot
+                let iTC = this.selectedAction.itemsToChoose;
+                let selectedItems = Util.getSelectedOptions(reactions, _.without(iTC.list.icons, '🚫', '✅'), reactionInfo.user.id);
+                if (selectedItems.length === 0) {
+                  this.send('Please at least one item to stash.');
+                  reactionInfo.messageReaction.remove(reactionInfo.user);
+                  return false;
+                } else {
+                  this.selectedAction.itemsToChoose.items = Util.getEmojiNumbersAsInts(selectedItems).map(index => iTC.items[index - 1]);
+                }
+                // Let it fall through, have the correct items now
+              }
+              // Slam it
+              let itemsToUnequip = '*' + Util.formattedList(Util.reduceList(this.selectedAction.itemsToChoose.items.map(item => Util.getDisplayName(item)))) + '*';
+              this.selectedAction.itemsToChoose.items.forEach(item => { item.equipped = false; });
+              equipItem.equipped = true;
+              this.send('*' + Util.getDisplayName(equipItem) + '* equipped, and ' + itemsToUnequip + ' unequipped!');
+              return this.performTurn();
             }
             return false;
           case 'SELECT_ITEM_ABILITY':
@@ -348,6 +443,33 @@ module.exports = class BattleManager {
     }
   }
 
+  doSwapLogic (additonalMsg) {
+    // Attempting to swap items
+    let current = this.characterInFocus.items.filter(item => !item.equipped);
+    let equippedList = this.characterInFocus.items.filter(item => item.equipped);
+    let msg;
+    let equipping = true;
+    if (current.length === 0) {
+      current = equippedList;
+      msg = 'Which item would you like to unequip?\n';
+      equipping = false;
+    } else {
+      msg = 'Which item would you like to equip?';
+      if (equippedList.length > 0) {
+        msg += ' To unequip an item without equipping a new one, press ➡';
+      }
+      msg += '\n';
+    }
+    let currentList = Util.getNumberedList(current);
+    if (equipping && equippedList.length > 0) {
+      let tickIndex = currentList.icons.indexOf('✅');
+      currentList.icons.splice(tickIndex, 0, '➡');
+    }
+    this.selectedAction = {items: current, itemList: currentList, equipping: equipping};
+    this.send((additonalMsg || '') + msg + currentList.msg, currentList.icons, true);
+    this.state = 'EQUIP_SELECT';
+  }
+
   getAbilityByIcon (actions, icon) {
     let abils = actions.items.filter(itemObj => itemObj.item.icon === icon)
       .concat(actions.abilities.filter(abilObj => abilObj.ability.icon === icon));
@@ -355,8 +477,8 @@ module.exports = class BattleManager {
   }
 
   getIconsForActions (actions, onlyIcons) {
-    let icons = actions.items.map(itemObj => itemObj.item.icon)
-      .concat(actions.abilities.map(abilObj => abilObj.ability.icon));
+    let icons = _.uniq(actions.items.map(itemObj => itemObj.item.icon)
+      .concat(actions.abilities.map(abilObj => abilObj.ability.icon)));
 
     if (!onlyIcons) {
       icons.push('✅');
@@ -485,6 +607,7 @@ module.exports = class BattleManager {
 
     // If there's a char provided and they have loot, let them give stuff
     if (char.items.length > 0) {
+      actions.abilities.push({ability: Abilities.getAbility('Equip'), targets: null});
       let giveAbility = Abilities.getAbility('Give');
       let targets = this.getValidTargets(char, giveAbility);
       if (targets && targets.length !== 0) {

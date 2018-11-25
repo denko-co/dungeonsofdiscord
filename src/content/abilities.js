@@ -30,6 +30,12 @@ let abilities = {
     type: ['RETURN'],
     icon: '⬅'
   },
+  equip: {
+    name: 'Equip',
+    description: 'Special ability for swapping items in your inventory',
+    type: ['EQUIP'],
+    icon: '🔄'
+  },
   give: {
     name: 'Give',
     description: 'Special ability for giving an item',
