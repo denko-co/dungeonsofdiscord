@@ -163,24 +163,40 @@ module.exports = class BattleManager {
               let chosen = this.getAbilityByIcon(this.actionsForPlayer, options[0]);
               if (chosen.length) {
                 // This icon matches mutiple items or abilities (usually will be 2 of the same item)
+                let mapping = chosen.map(actionItem => actionItem.item
+                  ? actionItem.item.getItemDetails()
+                  : actionItem.ability.getAbilityDetails()
+                );
+                let matches = Util.getNumberedList(mapping);
+                this.send('There are mutiple available actions with this icon. Which would you like to use? ' +
+                'Note that some item abilities may not be available.\n' +
+                  matches.msg, matches.icons, true);
+                this.selectedAction = {choices: chosen, chosenList: matches};
+                this.state = 'SELECT_ABILITY_CHOICE';
               } else {
                 // If there is an item, check if there is mutiple abilities
-                this.selectedAction = chosen;
-                if (this.selectedAction.item) {
-                  let abilityMap = this.selectedAction.abilities.map(abilObj => abilObj.ability);
-                  let abilityIcons = abilityMap.map(ability => ability.icon);
-                  let abilityMsg = abilityMap.map(ability => ability.getAbilityDetails()).join('\n');
-                  this.selectedAction.abilitiesText = {icons: abilityIcons, msg: abilityMsg};
-                  let iconsToSend = abilityIcons.slice();
-                  iconsToSend.push('✅', '🚫');
-                  this.send('What ability would you like to use?\n' + abilityMsg, iconsToSend, true);
-                  this.state = 'SELECT_ITEM_ABILITY';
-                } else {
-                  // Just an ability, jump through to target code
-                  let targets = Util.getNumberedList(this.selectedAction.targets);
-                  this.send('Please choose ' + this.selectedAction.ability.targets.number + ' target' + (this.selectedAction.ability.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
-                  this.state = 'SELECT_TARGET';
-                }
+                // > laughs in side effects
+                this.doAbilitySelectLogic(chosen);
+              }
+            }
+            return false;
+          case 'SELECT_ABILITY_CHOICE':
+            if (reactionInfo.react === '🚫') {
+              // Bounce back to action select
+              return this.cancelAction('Selection');
+            } else if (reactionInfo.react === '✅') {
+              let chosenAction = Util.getSelectedOptions(reactions, _.without(this.selectedAction.chosenList.icons, '🚫', '✅'), reactionInfo.user.id);
+              if (chosenAction.length === 0) {
+                this.send('Please select an item/ability.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else if (chosenAction.length > 1) {
+                this.send('Please select only one item/ability.');
+                reactionInfo.messageReaction.remove(reactionInfo.user);
+              } else {
+                let chosenIndex = Util.getEmojiNumbersAsInts(chosenAction);
+                let chosen = this.selectedAction.choices[chosenIndex - 1];
+                // Have an option, repeat the item or ability choice code
+                this.doAbilitySelectLogic(chosen);
               }
             }
             return false;
@@ -440,6 +456,25 @@ module.exports = class BattleManager {
       } else {
         return false; // Even less to do!
       }
+    }
+  }
+
+  doAbilitySelectLogic (chosen) {
+    this.selectedAction = chosen;
+    if (this.selectedAction.item) {
+      let abilityMap = this.selectedAction.abilities.map(abilObj => abilObj.ability);
+      let abilityIcons = abilityMap.map(ability => ability.icon);
+      let abilityMsg = abilityMap.map(ability => ability.getAbilityDetails()).join('\n');
+      this.selectedAction.abilitiesText = {icons: abilityIcons, msg: abilityMsg};
+      let iconsToSend = abilityIcons.slice();
+      iconsToSend.push('✅', '🚫');
+      this.send('What ability would you like to use?\n' + abilityMsg, iconsToSend, true);
+      this.state = 'SELECT_ITEM_ABILITY';
+    } else {
+      // Just an ability, jump through to target code
+      let targets = Util.getNumberedList(this.selectedAction.targets);
+      this.send('Please choose ' + this.selectedAction.ability.targets.number + ' target' + (this.selectedAction.ability.targets.number === 1 ? '' : 's') + ' from the following.\n' + targets.msg, targets.icons, true);
+      this.state = 'SELECT_TARGET';
     }
   }
 
