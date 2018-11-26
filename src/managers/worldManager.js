@@ -89,9 +89,72 @@ module.exports = class WorldManager {
               let directions = Util.getNumberedList(this.currentRoomActions.actions.move.map(direction => Util.capitalise(direction)));
               this.send('Which direction would you like to move the party in?\n' + directions.msg, directions.icons, true);
               this.state = 'SELECT_MOVE';
+            } else if (options[0] === '↕') {
+              let items;
+              let msg;
+              if (this.characterInFocus.items.length > 0) {
+                msg = 'Which items would you like to drop?';
+                items = Util.getNumberedList(this.characterInFocus.items);
+                if (this.currentRoom.floorItems.length > 0) {
+                  msg += ' To pick something up off the floor, press ➡';
+                  let tickIndex = items.icons.indexOf('✅');
+                  items.icons.splice(tickIndex, 0, '➡');
+                }
+              } else {
+                // Must be something on the floor (or they wouldn't get this option!)
+                msg = 'Which item would you like to pick up?';
+                items = Util.getNumberedList(this.currentRoom.floorItems);
+              }
+              this.currentOptionInfo = {dropping: this.characterInFocus.items.length > 0, list: items};
+              this.send(msg + '\n' + items.msg, items.icons, true);
+              this.state = 'SELECT_GROUND';
             } else if (options[0] === '➡') {
               // They want to swap to battle context
               this.gameManager.currentBattle = new BattleManager(this, this.gameManager.players, null, this.characterInFocus);
+            }
+            break;
+          case 'SELECT_GROUND':
+            if (react === '🚫') {
+              this.cancelAction('Drop/pick up');
+            } else if (react === '✅') {
+              let items = Util.getSelectedOptions(reactions, _.without(this.currentOptionInfo.list.icons, '🚫', '✅'), user.id);
+              if (items.length === 0) {
+                this.send('Please select at least one item');
+                messageReaction.remove(user);
+              } else if (!this.currentOptionInfo.dropping && items.length > 1) {
+                this.send('You can\'t pick up mutiple items in one turn, or pick up and change modes.');
+                messageReaction.remove(user);
+              } else if (items.length > 1 && items.includes('➡')) {
+                this.send('You can\'t drop stuff and change modes.');
+                messageReaction.remove(user);
+              } else {
+                if (items[0] === '➡' || items[0] === '⬅') {
+                  let chosen = items[0];
+                  let opposite = chosen === '➡' ? '⬅' : '➡';
+                  let msg = chosen === '➡'
+                    ? 'Which item would you like to pick up? To drop things on the floor, press ⬅\n'
+                    : 'Which items would you like to drop? To pick something up off the floor, press ➡\n';
+                  let list = chosen === '➡' ? this.currentRoom.floorItems : this.characterInFocus.items;
+                  let currentList = Util.getNumberedList(list);
+                  let tickIndex = currentList.icons.indexOf('✅');
+                  currentList.icons.splice(tickIndex, 0, opposite);
+                  this.currentOptionInfo = {dropping: chosen !== '➡', list: currentList};
+                  this.send(msg + currentList.msg, currentList.icons, true);
+                } else {
+                  // There is probably a clever js pattern for this...
+                  let start = this.currentOptionInfo.dropping ? this.characterInFocus.items : this.currentRoom.floorItems;
+                  let end = this.currentOptionInfo.dropping ? this.currentRoom.floorItems : this.characterInFocus.items;
+                  let itemList = [];
+                  Util.getEmojiNumbersAsInts(items).reverse().forEach(index => {
+                    itemList.push(start[index - 1]);
+                    end.push(start[index - 1]);
+                    start.splice(index - 1, 1);
+                  });
+                  let formatted = Util.formattedList(Util.reduceList(itemList.map(item => Util.getDisplayName(item))));
+                  this.send((this.currentOptionInfo.dropping ? 'Dropped ' : 'Picked up ') + '*' + formatted + '!*');
+                  this.cleanupCurrentCharacter();
+                }
+              }
             }
             break;
           case 'SELECT_TALK':
@@ -353,6 +416,10 @@ module.exports = class WorldManager {
         icons.push(iconMap[prop]);
       }
     }
+
+    // Give player option to pick up and drop things from the floor out of combat
+    if (char.items.length > 0 || room.floorItems.length > 0) icons.push('↕');
+
     icons.push('🤷', '➡', '✅'); // Can always pass, can always swap to battle mode
 
     return {actions: actionList, icons: icons};

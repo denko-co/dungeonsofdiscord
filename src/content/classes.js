@@ -17,7 +17,6 @@ let classes = {
       you can't use your abilities if you're dead.`,
     hp: 14,
     itemNames: [
-      'Spiked Shield',
       'Spiked Shield'
     ],
     abilityNames: [

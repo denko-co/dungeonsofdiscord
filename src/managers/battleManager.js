@@ -174,7 +174,6 @@ module.exports = class BattleManager {
                 this.selectedAction = {choices: chosen, chosenList: matches};
                 this.state = 'SELECT_ABILITY_CHOICE';
               } else {
-                // If there is an item, check if there is mutiple abilities
                 // > laughs in side effects
                 this.doAbilitySelectLogic(chosen);
               }
@@ -412,7 +411,6 @@ module.exports = class BattleManager {
                 let gift = this.characterInFocus.items[giftIndex - 1];
                 this.selectedAction.item = gift;
                 // Give them choice on who to gift
-                // I swap allies <-> team depending on whether I'm testing or not
                 let alliesList = Util.getNumberedList(this.selectedAction.targets);
                 this.send('Who would you like to give *' + Util.getDisplayName(gift) + '*?\n' + alliesList.msg, alliesList.icons, true);
                 this.state = 'SELECT_GIVE_TARGET';
@@ -461,6 +459,7 @@ module.exports = class BattleManager {
 
   doAbilitySelectLogic (chosen) {
     this.selectedAction = chosen;
+    // If there is an item, check if there is mutiple abilities
     if (this.selectedAction.item) {
       let abilityMap = this.selectedAction.abilities.map(abilObj => abilObj.ability);
       let abilityIcons = abilityMap.map(ability => ability.icon);
@@ -646,7 +645,6 @@ module.exports = class BattleManager {
       let giveAbility = Abilities.getAbility('Give');
       let targets = this.getValidTargets(char, giveAbility);
       if (targets && targets.length !== 0) {
-        // Note that this is > items, item gets set when we select one
         actions.abilities.push({ability: Abilities.getAbility('Give'), targets: targets});
       }
     }
