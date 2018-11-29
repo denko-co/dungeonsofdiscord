@@ -439,6 +439,7 @@ module.exports = class BattleManager {
 
                 // Give item to person
                 personToGift.items.push(this.selectedAction.item);
+                this.selectedAction.item.equipped = false;
                 this.selectedAction.item.owner = personToGift;
 
                 // Take it away from the owner ;(

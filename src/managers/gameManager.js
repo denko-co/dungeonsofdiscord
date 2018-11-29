@@ -4,6 +4,7 @@ const tr = require('../translations/translations.json');
 const Util = require('../util/util.js');
 // Managers
 const WorldManager = require('./worldManager.js');
+const PlayerManager = require('./playerManager.js');
 // Meta
 const Classes = require('../content/classes.js');
 
@@ -23,6 +24,7 @@ module.exports = class GameManager {
     this.playerIds = null;
     // Game world info
     this.players = [[], [], []]; // Players in current position order
+    this.playerCards = []; // Player cards for use by index.js
     this.world = null; // Actually only need to build the world once the game has started
     this.currentBattle = null; // Reference to the current BattleManager
     this.battleNumber = 1;
@@ -223,7 +225,7 @@ module.exports = class GameManager {
         messageReaction.remove(user);
       } else {
         // Got one, slam it
-        addPlayer.call(this, playerToChooseClass, classList.classArray[Util.getEmojiNumbersAsInts(selectedClass)[0] - 1].name);
+        addPlayer.call(this, user, classList.classArray[Util.getEmojiNumbersAsInts(selectedClass)[0] - 1].name);
         // Rotate the player to choose class
         playerToChooseClass = getPlayerToChooseClass.call(this);
         classConfirmed = true;
@@ -260,11 +262,15 @@ module.exports = class GameManager {
       return null;
     }
 
-    function addPlayer (userId, className) {
+    function addPlayer (user, className) {
       for (let i = 0; i < this.players.length; i++) {
         if (this.players[i].length === 0) {
-          this.players[i].push(Classes.getClass(className, userId)); // Dynamic so will use correct copies
-          this.send(`${Util.getMention(userId)} the ${className}, I like it! o/`);
+          let player = Classes.getClass(className, user.id);
+          let playerCard = new PlayerManager(user, player, this);
+          this.playerCards.push(playerCard);
+          player.playerCard = playerCard;
+          this.players[i].push(Classes.getClass(className, user.id)); // Dynamic so will use correct copies
+          this.send(`${Util.getMention(user.id)} the ${className}, I like it! o/`);
           return;
         }
       }

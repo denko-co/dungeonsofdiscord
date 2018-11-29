@@ -14,13 +14,21 @@ bot.on('ready', function (event) {
   gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.initialise());
 });
 
+bot.on('messageReactionRemove', function (messageReaction, user) {
+  if (user.bot) return;
+  // Treat this like a button press instead of an unpress
+  handlePlayerCard(messageReaction, user);
+});
+
 bot.on('messageReactionAdd', function (messageReaction, user) {
+  if (user.bot) return;
   let channelId = messageReaction.message.channel.id;
-  if (!user.bot && gameManagers[channelId]) {
+  if (gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];
     // console.log(messageReaction.emoji);
     gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.handleReaction(messageReaction, user));
   }
+  handlePlayerCard(messageReaction, user);
 });
 
 bot.on('message', function (message) {
@@ -32,3 +40,15 @@ bot.on('message', function (message) {
     }
   }
 });
+
+function handlePlayerCard (messageReaction, user) {
+  // Not sure if this is the right approach, blocked until game turn is complete
+  for (let game in gameManagers) {
+    let gameManager = gameManagers[game];
+    let playerCard = gameManager.playerCards.find(pc => pc.cardMessage === messageReaction.message);
+    if (playerCard) {
+      gameManager.gameQueue = gameManager.gameQueue.then(() => playerCard.handleReaction(messageReaction, user));
+      return;
+    }
+  }
+}

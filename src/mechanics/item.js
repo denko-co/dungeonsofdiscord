@@ -18,7 +18,7 @@ module.exports = class Item {
   }
 
   getItemDetails () {
-    let text = '**' + this.displayName + '**' + ' ' + this.description + '\n';
+    let text = this.icon + ' **' + this.displayName + '**' + ' ' + this.description + '\n';
     text += '*' + this.displayName + ' abilities:* ';
 
     text += this.abilities.length === 0 ? '-' : '\n';

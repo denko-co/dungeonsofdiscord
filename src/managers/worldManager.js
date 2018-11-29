@@ -146,8 +146,15 @@ module.exports = class WorldManager {
                   let end = this.currentOptionInfo.dropping ? this.currentRoom.floorItems : this.characterInFocus.items;
                   let itemList = [];
                   Util.getEmojiNumbersAsInts(items).reverse().forEach(index => {
-                    itemList.push(start[index - 1]);
-                    end.push(start[index - 1]);
+                    let item = start[index - 1];
+                    if (this.currentOptionInfo.dropping) {
+                      item.equipped = false;
+                      item.owner = null;
+                    } else {
+                      item.owner = this.characterInFocus;
+                    }
+                    itemList.push(item);
+                    end.push(item);
                     start.splice(index - 1, 1);
                   });
                   let formatted = Util.formattedList(Util.reduceList(itemList.map(item => Util.getDisplayName(item))));
