@@ -9,6 +9,7 @@
   "author": "Frano Stanisic",
   "license": "MIT",
   "dependencies": {
+    "canvas": "^2.2.0",
     "discord.js": "^11.3.2",
     "lodash.clonedeep": "^4.5.0",
     "pluralize": "^7.0.0",

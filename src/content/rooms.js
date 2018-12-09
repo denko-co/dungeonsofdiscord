@@ -9,7 +9,7 @@ let rooms = {
     name: 'Kiki\'s Camp',
     showName: true,
     directions: {
-      right: false
+      right: true
     },
     onEnter (worldManager) {
       if (this.visited) {
