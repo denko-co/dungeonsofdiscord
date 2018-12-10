@@ -22,6 +22,10 @@ bot.on('messageReactionRemove', function (messageReaction, user) {
 
 bot.on('messageReactionAdd', function (messageReaction, user) {
   if (user.bot) return;
+  if (messageReaction.me && messageReaction.emoji.name === '🗑') {
+    messageReaction.message.delete();
+    return;
+  }
   let channelId = messageReaction.message.channel.id;
   if (gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];

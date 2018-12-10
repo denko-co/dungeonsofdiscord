@@ -8,7 +8,7 @@ module.exports = class PlayerManager {
     this.game = gameRef;
     this.state = 'getIntroText';
     // Might run into problems here trying to restore a `message` from the db
-    user.send(this.getIntroText()).then((message) => {
+    user.send(this.getIntroText().text).then((message) => {
       this.cardMessage = message;
       return Util.addReactions(message, ['❤', '🤸', '👜', '⚔', '🗺', '❓']);
     });
@@ -21,23 +21,24 @@ module.exports = class PlayerManager {
       '🤸': 'getPlayerLoadoutText',
       '👜': 'getIntroText',
       '⚔': 'getIntroText',
-      '🗺': 'getFloorMap',
-      '❓': 'getIntroText'
+      '🗺': 'getFloorMap'
     };
     // Can't remove reactions in DM's!
     let funct = mapping[react];
     if (funct) {
       this.state = funct;
-      if (funct === 'getFloorMap') {
-        let result = this[funct]();
-        return this.cardMessage.channel.send(result[0], {
-          file: {
-            attachment: result[1],
-            name: 'map.png'
-          }
-        });
-      }
-      return this.cardMessage.edit(this[funct]());
+      let result = this[funct]();
+      const reactions = result.reactions || [];
+      reactions.push('🗑'); // me_irl
+      return this.cardMessage.channel.send(
+        result.text,
+        result.attachment
+          ? {
+            file: {
+              attachment: result.attachment
+            }
+          } : null
+      ).then(message => Util.addReactions(message, reactions));
     }
     return Promise.resolve();
   }
@@ -73,7 +74,7 @@ module.exports = class PlayerManager {
       }
       text += '\n';
     }
-    return text;
+    return {text: text};
   }
 
   getPlayerOverviewText () {
@@ -103,7 +104,7 @@ module.exports = class PlayerManager {
       }
     }
     text += '*See the item menus for item breakdowns.*';
-    return text;
+    return {text: text};
   }
 
   getIntroText () {
@@ -118,10 +119,10 @@ module.exports = class PlayerManager {
     text += `⚔ shows battle info, so your position in an out of combat, HP of allies, and any in battle effect positions.\n`;
     text += `Finally, 🗺 shows world info, specifically, the current floor, where you are, and any points of interest.\n`;
     // text += `Finally, 📖 opens up the manual, which tells you what buttons do in the game.\n\n`;
-    text += `Phew, a lot of reading for a text based adventure eh? If you ever get stuck, you can always come back here using the ❓ button.\n`;
+    // text += `Phew, a lot of reading for a text based adventure eh? If you ever get stuck, you can always come back here using the ❓ button.\n`;
     text += `Oh, and by the way - if something is happening in game, I will update your card after it's done.\n`;
     text += `Good luck out there! You're gonna need it! ;)`;
-    return text;
+    return {text: text};
   }
 
   getFloorMap () {
@@ -212,6 +213,6 @@ module.exports = class PlayerManager {
       }
     }
     // Should be all draw now, send it back
-    return [`Here's the map!`, canvas.toBuffer('image/png')];
+    return {text: `Here's the map!`, attachment: canvas.toBuffer('image/png')};
   }
 };
