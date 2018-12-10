@@ -150,9 +150,22 @@ module.exports = class PlayerManager {
       }
     }
 
-    const canvas = createCanvas(2 * BORDER + (maximumRoomIndex - minimumRoomIndex + 1) * ROOM_WIDTH,
-      2 * BORDER + (lastRoomIndex - firstRoomIndex + 1) * ROOM_HEIGHT);
+    const canvasWidth = 2 * BORDER + (maximumRoomIndex - minimumRoomIndex + 1) * ROOM_WIDTH;
+    const canvasHeight = 2 * BORDER + (lastRoomIndex - firstRoomIndex + 1) * ROOM_HEIGHT;
+
+    const canvas = createCanvas(canvasWidth, canvasHeight);
     const ctx = canvas.getContext('2d');
+
+    // Block fill canvas with one colour
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Set up text centering
+    ctx.fillStyle = '#000000';
+    ctx.font = '20px Comic Sans MS';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
     const mapping = {
       up: [[0, 0], [1, 0]],
       down: [[0, 1], [1, 1]],
@@ -190,6 +203,11 @@ module.exports = class PlayerManager {
           ctx.lineTo(BORDER + (adjustedj + endPos[0]) * ROOM_WIDTH,
             BORDER + (adjustedi + endPos[1]) * ROOM_HEIGHT);
           ctx.stroke(); // Hey, you and me both buddy
+        }
+
+        if (room.showName) {
+          // Place text in the center of this new box
+          ctx.fillText(room.name, BORDER + (adjustedj * ROOM_WIDTH) + (ROOM_WIDTH / 2), BORDER + (adjustedi * ROOM_HEIGHT) + (ROOM_HEIGHT / 2));
         }
       }
     }
