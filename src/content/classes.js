@@ -17,7 +17,6 @@ let classes = {
       you can't use your abilities if you're dead.`,
     hp: 14,
     itemNames: [
-      'Spiked Shield',
       'Spiked Shield'
     ],
     abilityNames: [
@@ -91,7 +90,7 @@ exports.getClass = function (name, playerId, displayName) {
   if (classDetails.itemNames) {
     for (let i = 0; i < classDetails.itemNames.length; i++) {
       let itemToEquip = Items.getItem(classDetails.itemNames[i]);
-      // itemToEquip.equipped = true;
+      itemToEquip.equipped = true;
       items.push(itemToEquip);
     }
   }
