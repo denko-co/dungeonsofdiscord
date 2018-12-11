@@ -32,8 +32,6 @@ module.exports = class Character {
 
     this.controller = null;
 
-    this.playerCard = null; // Will only be defined for classes
-
     this.alive = true;
   }
 

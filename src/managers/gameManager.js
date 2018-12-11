@@ -141,38 +141,6 @@ module.exports = class GameManager {
     return this.sendAll(); // All done!
   }
 
-  handleMessage (message) {
-    if (!this.messageId) return;
-    let command = message.content.substring(1).toLowerCase();
-    let cmdSplit = command.match(/\S+/g) || [];
-    if (this.currentBattle && (command === 'battle' || command === 'battlefield')) {
-      this.send(this.currentBattle.getBattlefield());
-    } else if (this.players && !this.world && cmdSplit[0] === 'info') {
-      if (!cmdSplit[1]) {
-        this.send('Please specify which # class to get more info for.');
-      } else {
-        let index = parseInt(cmdSplit[1]);
-        let classList = Classes.getClasses();
-        if (isNaN(cmdSplit[1]) || index < 1 || index > classList.length) {
-          this.send('Please specify a valid # for the class info.');
-        } else {
-          let selectedClass = classList[index - 1];
-          this.send(`*${selectedClass.name} info:*\n${selectedClass.detailedDescription.split('\n').map(str => str.trim()).join(' ')}`);
-        }
-      }
-    } else if (command === 'me') {
-      this.players.forEach(arr => {
-        arr.forEach(char => {
-          if (char.controller === message.author.id) {
-            this.send(char.getCharacterDetails(this.currentBattle));
-          }
-        });
-      });
-    }
-    console.log(command);
-    return this.sendAll();
-  }
-
   // Function to handle the ready up logic
   handlePlayerReady (reactionInfo) {
     let playerReadyResult = false;
@@ -207,14 +175,13 @@ module.exports = class GameManager {
     let playerToChooseClass = getPlayerToChooseClass.call(this);
     if (!playerToChooseClass) throw new Error('No world available, but all players are set.');
     // Was this a confirm? If not, bounce it.
-    if (!(react === '✅' && (readyHappened || user.id === playerToChooseClass))) return false;
+    if (!(['ℹ', '✅'].includes(react) && (readyHappened || user.id === playerToChooseClass))) return false;
     // Get all the available classes
     let classList = getClassList.call(this);
     if (!readyHappened) {
       // Got a confirm and a user, figure out if they've selected something valid
       let classConfirmed = false;
-      let selectedClass = Util.getSelectedOptions(reactions, _.without(classList.icons, '✅'), user.id);
-      console.log(selectedClass);
+      let selectedClass = Util.getSelectedOptions(reactions, _.without(classList.icons, 'ℹ', '✅'), user.id);
       if (selectedClass.length === 0) {
         // No option provided!
         this.send('Please select a class! Decisions are scary, I know. But you\'ve got to be brave!');
@@ -224,11 +191,18 @@ module.exports = class GameManager {
         this.send('Too many choices! Only one pls!');
         messageReaction.remove(user);
       } else {
-        // Got one, slam it
-        addPlayer.call(this, user, classList.classArray[Util.getEmojiNumbersAsInts(selectedClass)[0] - 1].name);
-        // Rotate the player to choose class
-        playerToChooseClass = getPlayerToChooseClass.call(this);
-        classConfirmed = true;
+        // Got one, figure out what the action actually is
+        let classIndex = Util.getEmojiNumbersAsInts(selectedClass)[0] - 1;
+        let selected = classList.classArray[classIndex];
+        if (react === 'ℹ') {
+          this.send(`*${selected.name} info:*\n${selected.detailedDescription.split('\n').map(str => str.trim()).join(' ')}`, ['🗑']);
+          messageReaction.remove(user);
+        } else {
+          addPlayer.call(this, user, selected.name);
+          // Rotate the player to choose class
+          playerToChooseClass = getPlayerToChooseClass.call(this);
+          classConfirmed = true;
+        }
       }
       if (!classConfirmed) return false;
     }
@@ -249,7 +223,7 @@ module.exports = class GameManager {
         classString += numbers[i] + ' - ' + classInfo[i].selectText + '\n';
       }
       let classIcons = numbers.slice(0, classInfo.length);
-      classIcons.push('✅');
+      classIcons.push('ℹ', '✅');
       return {msg: classString, icons: classIcons, classArray: classInfo};
     }
 
@@ -268,8 +242,7 @@ module.exports = class GameManager {
           let player = Classes.getClass(className, user.id);
           let playerCard = new PlayerManager(user, player, this);
           this.playerCards.push(playerCard);
-          player.playerCard = playerCard;
-          this.players[i].push(Classes.getClass(className, user.id)); // Dynamic so will use correct copies
+          this.players[i].push(player); // Dynamic so will use correct copies
           this.send(`${Util.getMention(user.id)} the ${className}, I like it! o/`);
           return;
         }

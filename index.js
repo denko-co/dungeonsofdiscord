@@ -14,45 +14,33 @@ bot.on('ready', function (event) {
   gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.initialise());
 });
 
-bot.on('messageReactionRemove', function (messageReaction, user) {
-  if (user.bot) return;
-  // Treat this like a button press instead of an unpress
-  handlePlayerCard(messageReaction, user);
-});
-
 bot.on('messageReactionAdd', function (messageReaction, user) {
   if (user.bot) return;
   if (messageReaction.me && messageReaction.emoji.name === '🗑') {
     messageReaction.message.delete();
     return;
   }
-  let channelId = messageReaction.message.channel.id;
+  let channel = messageReaction.message.channel;
+  let channelId = channel.id;
   if (gameManagers[channelId]) {
     let gameManager = gameManagers[channelId];
     // console.log(messageReaction.emoji);
     gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.handleReaction(messageReaction, user));
-  }
-  handlePlayerCard(messageReaction, user);
-});
-
-bot.on('message', function (message) {
-  let channelId = message.channel.id;
-  if (!message.author.bot && gameManagers[channelId]) {
-    let gameManager = gameManagers[channelId];
-    if (message.content.charAt(0) === '!') { // Swap this out for prefix later
-      gameManager.gameQueue = gameManager.gameQueue.then(() => gameManager.handleMessage(message));
-    }
+  } else if (channel.type === 'dm') {
+    handlePlayerCard(messageReaction, user);
   }
 });
 
 function handlePlayerCard (messageReaction, user) {
   // Not sure if this is the right approach, blocked until game turn is complete
+  console.log('Handling player card...');
   for (let game in gameManagers) {
     let gameManager = gameManagers[game];
-    let playerCard = gameManager.playerCards.find(pc => pc.cardMessage === messageReaction.message);
+    let playerCard = gameManager.playerCards.find(pc => pc.cardMessage.id === messageReaction.message.id);
     if (playerCard) {
       gameManager.gameQueue = gameManager.gameQueue.then(() => playerCard.handleReaction(messageReaction, user));
       return;
     }
+    console.log(`Nothing found, exiting!`);
   }
 }

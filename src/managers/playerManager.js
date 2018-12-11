@@ -10,17 +10,18 @@ module.exports = class PlayerManager {
     // Might run into problems here trying to restore a `message` from the db
     user.send(this.getIntroText().text).then((message) => {
       this.cardMessage = message;
-      return Util.addReactions(message, ['❤', '🤸', '👜', '⚔', '🗺', '❓']);
+      return Util.addReactions(message, ['❤', '🤸', '👜', '⚔', '🗺']);
     });
   }
 
   handleReaction (messageReaction, user) {
+    console.log(`handleReaction, registering!`);
     let react = messageReaction.emoji.name;
     let mapping = {
       '❤': 'getPlayerOverviewText',
       '🤸': 'getPlayerLoadoutText',
-      '👜': 'getIntroText',
-      '⚔': 'getIntroText',
+      '👜': 'getPlayerInventoryText',
+      '⚔': 'getBattleInfo',
       '🗺': 'getFloorMap'
     };
     // Can't remove reactions in DM's!
@@ -41,6 +42,13 @@ module.exports = class PlayerManager {
       ).then(message => Util.addReactions(message, reactions));
     }
     return Promise.resolve();
+  }
+
+  getPlayerInventoryText () {
+    let player = this.player;
+    let items = player.items.filter(item => !item.equipped);
+    let inventoryItems = Util.getNumberedList(items);
+    return {text: `*Inventory items for ${Util.getDisplayName(player)}*\n${inventoryItems.msg}`};
   }
 
   getPlayerLoadoutText () {
@@ -108,7 +116,8 @@ module.exports = class PlayerManager {
   }
 
   getIntroText () {
-    let userMention = Util.getMention(this.player.controller);
+    let player = this.player;
+    let userMention = Util.getDisplayName(player);
     let text = '';
     text += `Hey ${userMention}, again, welcome to ***DUNGEONS OF DISCORD***. This is your handy dandy player card.\n`;
     text += `It contains important information about you, the game, and how to play!\n\n`;
@@ -125,8 +134,31 @@ module.exports = class PlayerManager {
     return {text: text};
   }
 
+  getBattleInfo () {
+    if (!this.game.world) return {text: `The game hasn't started yet! Check back here soon!`};
+    if (this.game.currentBattle) {
+      return {text: this.game.currentBattle.getBattlefield()};
+    } else {
+      // A little bit gross, but because they are not in a combat we will repeat the logic for player placement
+      const playerPositions = this.game.players.slice().reverse();
+      const no = '-';
+
+      let text = '';
+      for (let i = 0; i < playerPositions.length; i++) {
+        text += '***Position ' + (i + 1) + ':*** ';
+        if (playerPositions[i].length === 0) text += no;
+        for (let j = 0; j < playerPositions[i].length; j++) {
+          let char = playerPositions[i][j];
+          text += (j === 0 ? '' : ', ') + Util.getDisplayName(char) + ' @ ' + char.currenthp + '/' + char.hp + ' hp';
+        }
+        text += '\n';
+      }
+      return {text: text};
+    }
+  }
+
   getFloorMap () {
-    if (!this.game.world) return [`The game hasn't started yet! Check back here soon!`, null];
+    if (!this.game.world) return {text: `The game hasn't started yet! Check back here soon!`};
     // Values in px
     const BORDER = 40;
     const ROOM_WIDTH = 200;
