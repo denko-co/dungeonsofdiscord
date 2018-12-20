@@ -1,4 +1,5 @@
 const Abilities = require('./abilities.js');
+const Items = require('./items.js');
 const Effects = require('./effects.js');
 const Character = require('../mechanics/character.js');
 const Util = require('../util/util.js');
@@ -50,6 +51,11 @@ let creatures = {
     speed: 'FAST',
     abilityNames: [
       'Training Strike'
+    ],
+    itemNames: [
+      'Sudoku Booklet',
+      'Sudoku Booklet',
+      'Sudoku Booklet'
     ],
     logic: {
       talkState: 'start',
@@ -504,6 +510,15 @@ exports.getCreature = function (name, displayName) {
     }
   }
 
+  let items = [];
+  if (creatureDetails.itemNames) {
+    for (let i = 0; i < creatureDetails.itemNames.length; i++) {
+      let itemToEquip = Items.getItem(creatureDetails.itemNames[i]);
+      itemToEquip.equipped = true;
+      items.push(itemToEquip);
+    }
+  }
+
   let effects = [];
   if (creatureDetails.effects) {
     for (let i = 0; i < creatureDetails.effects.length; i++) {
@@ -511,7 +526,11 @@ exports.getCreature = function (name, displayName) {
     }
   }
 
-  let creatureToAdd = new Character(creatureDetails.name, displayName || creatureDetails.name, creatureDetails.description, 'CREATURE', creatureDetails.hp, creatureDetails.speed, creatureDetails.logic, abilities, creatureDetails.items, effects);
+  let creatureToAdd = new Character(creatureDetails.name, displayName || creatureDetails.name, creatureDetails.description, 'CREATURE', creatureDetails.hp, creatureDetails.speed, creatureDetails.logic, abilities, items, effects);
+
+  creatureToAdd.items.forEach(item => {
+    item.owner = creatureToAdd;
+  });
 
   creatureToAdd.effects.forEach(effect => {
     effect.whoApplied = creatureToAdd;

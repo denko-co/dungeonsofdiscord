@@ -126,13 +126,21 @@ module.exports = class GameManager {
     do {
       // If we have a battle, handle it!
       if (this.currentBattle) {
-        lastActivityResult = this.currentBattle.performTurn(battleCreated ? null : reactionInfo);
+        let items = this.currentBattle.itemsToDistribute;
+        if (items) {
+          this.handleLootDistribution(reactionInfo, this.currentBattle);
+          lastActivityResult = items.length === 0;
+        } else {
+          lastActivityResult = this.currentBattle.performTurn(battleCreated ? null : reactionInfo);
+        }
         if (lastActivityResult) { // If the battle is now over
           if (!this.currentBattle.isTemporary) {
-            this.battleNumber++;
-            // Do loot distro
-            this.handleLootDistribution(reactionInfo, this.currentBattle);
-            if (this.currentBattle.itemsToDistribute.length > 0) return this.sendAll();
+            if (!items) {
+              this.battleNumber++;
+              // Do loot distro
+              this.handleLootDistribution(reactionInfo, this.currentBattle);
+              if (this.currentBattle.itemsToDistribute.length > 0) return this.sendAll();
+            }
             lastActivityResult = this.world.onBattleComplete(); // World should exist here
             if (!lastActivityResult) return this.sendAll(); // We are back in conversation, let the person respond
           } else {
@@ -168,39 +176,99 @@ module.exports = class GameManager {
   // Function to handle loot distribution
   handleLootDistribution (reactionInfo, battle) {
     let players = Util.getEffectiveCharacters(this.players).players;
-    if (battle) {
+    let empty = false;
+    if (!battle.itemsToDistribute) {
       // Battle just finished, generate the listo
       battle.itemsToDistribute = [].concat(...battle.graveyard.filter(dead => !dead.controller).map(dead => dead.items));
-      /*
-      if (players.length === 1) {
-        players[0].items.push(...battle.itemsToDistribute.forEach(item => {
+      if (players.length === 1 && battle.itemsToDistribute.length > 0) {
+        battle.itemsToDistribute.forEach(item => {
           item.equipped = false;
           item.owner = players[0];
-        }));
+        });
+        players[0].items.push(...battle.itemsToDistribute);
+        let lootList = Util.formattedList(Util.reduceList(battle.itemsToDistribute.map(item => Util.getDisplayName(item))));
         battle.itemsToDistribute = [];
+        this.send('It looks like you\'re the only person around, so you get all the loot (' + lootList + ')! Drop what you don\'t need later.');
+        empty = true;
       } else if (battle.itemsToDistribute.length > 0) {
-      */
-      this.send('Welcome to ***Need or Greed***, the show where bodies are looted, RNG is rampant, and most importantly, the contribution to the previous fight *doesn\'t matter.*');
-      this.send('Let\'s get started!');
-      // }
+        this.send('Welcome to ***Need or Greed***, the show where bodies are looted, RNG is rampant, and most importantly, the contribution to the previous fight *doesn\'t matter.*');
+        this.send('Let\'s get started!');
+      } else {
+        empty = true;
+      }
     } else {
       // Reaction comes in, let's see if we need to run the distribution
+      let {messageReaction, react, user, reactions } = reactionInfo;
+      if (react === '✅') {
+        let options = Util.getSelectedOptions(reactions, ['🙆', '🤷', '🙅'], user.id);
+        if (options.length === 0) {
+          // No option provided!
+          this.send(`Please select a roll ${Util.getMention(user.id)}!`);
+          messageReaction.remove(user);
+          return;
+        } else if (options.length > 1) {
+          // Too many options provided!
+          this.send(`Too many roll choices ${Util.getMention(user.id)}! Only one pls!`);
+          messageReaction.remove(user);
+          return;
+        } else {
+          // Let us consume...
+          const need = reactions.get('🙆').users.keyArray().filter(userId => this.playerIds.includes(userId));
+          const greed = reactions.get('🤷').users.keyArray().filter(userId => this.playerIds.includes(userId));
+          const pass = reactions.get('🙅').users.keyArray().filter(userId => this.playerIds.includes(userId));
+          if (need.length + greed.length + pass.length < players.length) return;
+          let checkArray = need.length > 0 ? need : greed;
+          if (checkArray.length === 0) {
+            this.send(`What? Nobody wants this? Well, I guess ravens can have it then.`);
+            battle.itemsToDistribute.shift();
+          } else {
+            let winner = null;
+            do {
+              let chances = checkArray.map(id => Math.random());
+              let maxChance = null;
+              let maxChancePos = null;
+              for (let i = 0; i < chances.length; i++) {
+                if (maxChance < chances[i]) {
+                  maxChance = chances[i];
+                  maxChancePos = i;
+                } else if (maxChance === chances[i]) {
+                  maxChancePos = null;
+                  break;
+                }
+              }
+              winner = maxChancePos;
+            } while (winner === null);
+            // We have a winner!
+            let winnerPlayer = players.find(player => player.controller === checkArray[winner]);
+            this.send(Util.getDisplayName(winnerPlayer) + ' wins! Enjoy!');
+            let item = battle.itemsToDistribute.shift();
+            console.log(battle.itemsToDistribute);
+            item.owner = winnerPlayer;
+            item.equipped = false;
+            winnerPlayer.items.push(item);
+          }
+        }
+      } else {
+        return;
+      }
     }
     if (battle.itemsToDistribute.length > 0) {
       let itemToGive = battle.itemsToDistribute[0];
-      this.send('Who wants a *' + Util.getDisplayName(itemToGive) + '*?' + Util.getNeedOrGreedStartText());
-      this.send('Here\'s the info:\n' + itemToGive.getItemDetails() + '\n');
-      this.send('Press 🙆 to roll Need, 🤷 to roll Greed, or 🙅 to pass. When you\'re ready, press ✅', ['🙆', '🤷', '🙅', '✅'], true);
+      this.send('Who wants a *' + Util.getDisplayName(itemToGive) + '?* ' + Util.getNeedOrGreedStartText() +
+      '\n\n*Here\'s the info:*\n' + itemToGive.getItemDetails() + '\n\n' +
+      'Press 🙆 to roll Need, 🤷 to roll Greed, or 🙅 to pass.\nWhen you\'re ready, press ✅', ['🙆', '🤷', '🙅', '✅'], true);
+    } else if (!empty) {
+      this.send('Show\'s over folks!');
     }
   }
 
   // Function to handle the ready up logic
   handlePlayerReady (reactionInfo) {
     let playerReadyResult = false;
-    let { messageReaction, react, user, message } = reactionInfo;
+    let { messageReaction, react, user, reactions } = reactionInfo;
     if (react === '✅') {
       // Setup players and get ready to rumble
-      let ready = message.reactions.get('🙋');
+      let ready = reactions.get('🙋');
       let userIds = ready.users.filter(reactUser => !reactUser.bot).keyArray();
       if (userIds.size <= 1) {
         this.send(tr.tooSmall);

@@ -21,8 +21,7 @@ module.exports = class Item {
     let text = this.icon + ' **' + this.displayName + '**' + ' ' + this.description + '\n';
     text += '*' + this.displayName + ' abilities:* ';
 
-    text += this.abilities.length === 0 ? '-' : '\n';
-
+    text += this.abilities.length === 0 ? '*-*\n' : '\n';
     this.abilities.forEach(ability => {
       text += ability.getAbilityDetails() + '\n';
     });
