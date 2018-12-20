@@ -47,6 +47,18 @@ let abilities = {
     },
     range: 1
   },
+  battle: {
+    name: 'Battle',
+    description: 'Special ability for printing the field state',
+    type: ['BATTLE'],
+    icon: '📰'
+  },
+  info: {
+    name: 'Info',
+    description: 'Special ability for telling you what all the buttons do',
+    type: ['INFO'],
+    icon: 'ℹ'
+  },
   // Player abilities
   whack: {
     name: 'Whack',
@@ -117,12 +129,34 @@ let abilities = {
     range: 2,
     icon: '😰'
   },
+  popTheLocks: {
+    name: 'Pop The Locks',
+    description: 'Open the box. Or at least, try to.',
+    type: ['GIVE_ITEM'],
+    effect: Effects.getEffect('Unboxing', {}),
+    targets: {
+      number: 1,
+      type: 'SELF'
+    },
+    range: 0,
+    icon: '📤'
+  },
   // Creature abilities
   trainingPreparation: {
     name: 'Training Preparation',
     type: ['SUMMON'],
     effect: Effects.getEffect('Summon', {
       toSummon: ['Training Dummy']
+    }),
+    targets: {
+      number: 0
+    }
+  },
+  blessedSummon: {
+    name: 'Blessed Summon',
+    type: ['SUMMON'],
+    effect: Effects.getEffect('Summon', {
+      toSummon: ['Blessed Training Dummy']
     }),
     targets: {
       number: 0
@@ -146,6 +180,16 @@ let abilities = {
     }),
     targets: {
       number: Infinity
+    }
+  },
+  enjoyYourLoot: {
+    name: 'Enjoy Your Loot',
+    type: ['GIVE_ITEM'],
+    effect: Effects.getEffect('Give Item For Each', {
+      toGive: ['Loot Box']
+    }),
+    targets: {
+      number: 1
     }
   },
   trainingStrike: {

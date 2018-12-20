@@ -30,9 +30,9 @@ module.exports = class BattleManager {
   }
 
   initialise () {
-    this.send(`*${Util.getBattleReadyText()}*`);
+    this.send(`\n*${Util.getBattleReadyText()}*`);
     this.send(Util.getVsText(this.encounter.displayName));
-    this.send(`***${Util.getBattleStartText()}***`);
+    this.send(`***${Util.getBattleStartText()}***\n`);
   }
 
   performTurn (reactionInfo) {
@@ -103,6 +103,28 @@ module.exports = class BattleManager {
         let reactions = reactionInfo.message.reactions;
         switch (this.state) {
           case 'SELECT_ABILITY':
+            if (reactionInfo.react === '📰') {
+              this.send(this.getBattlefield(), ['🗑']);
+              reactionInfo.messageReaction.remove(reactionInfo.user);
+              return false;
+            } else if (reactionInfo.react === 'ℹ') {
+              let mapping = {
+                '↔': 'gives you chances for moving positions, and lets you do so.',
+                '🏳': 'gives you the chance to flee, and lets you do so. This is only available from position 1.',
+                '🤷': 'passes your turn, if decisions are too difficult. This is like the out of combat option, but worse.',
+                '⬅': 'swaps you to the out of battle context, i.e, the screen from before. This is not available in a real battle.',
+                '🔄': 'allows you to equip and unequip items. Only equipped items can be used in battle.',
+                '🎁': 'allows you to give an item from your inventory or hand to somebody else in your party.',
+                '📰': 'shows you information about the current positions and effects of characters. This is also available in the player card.',
+                'ℹ': 'shows you this, but you already knew that!'
+              };
+              let info = this.getIconsForActions(this.actionsForPlayer, true)
+                .filter(icon => mapping[icon])
+                .map(icon => icon + ' ' + mapping[icon]).join('\n');
+              this.send('*Here are what the buttons do:*\n' + info + '\n\nAnything that is not here is an ability from an item or your skills.', ['🗑']);
+              reactionInfo.messageReaction.remove(reactionInfo.user);
+              return false;
+            }
             if (reactionInfo.react !== '✅') return false; // Nothing to do!
             // Let's confirm their actions ...
             let options = Util.getSelectedOptions(reactions, this.getIconsForActions(this.actionsForPlayer, true), reactionInfo.user.id);
@@ -347,7 +369,7 @@ module.exports = class BattleManager {
                   item.onUse.before(ability, this);
                 }
 
-                this.useAbility(ability, this.characterInFocus, targetChars);
+                this.useAbility(ability, this.characterInFocus, targetChars, item);
 
                 if (item && item.onUse.after) {
                   item.onUse.after(ability, this);
@@ -653,6 +675,12 @@ module.exports = class BattleManager {
     // Can always pass
     actions.abilities.push({ability: Abilities.getAbility('Pass'), targets: null});
 
+    // Can always display combat info (can also do this from char card)
+    actions.abilities.push({ability: Abilities.getAbility('Battle'), targets: null});
+
+    // Can always ask for info
+    actions.abilities.push({ability: Abilities.getAbility('Info'), targets: null});
+
     // If this is not a real combat, give them a chance to opt out
     if (this.isTemporary) actions.abilities.push({ability: Abilities.getAbility('Return'), targets: null});
 
@@ -759,13 +787,13 @@ module.exports = class BattleManager {
     return false;
   }
 
-  useAbility (ability, caster, targets) {
+  useAbility (ability, caster, targets, item) {
     let effect = Util.clone(ability.effect); // Take copy
     effect.whoApplied = caster;
     if (ability.targets.number === 0) {
       // Battlefield effect, oBA handles the placement (battleManager still does cleanup ? )
       if (effect.onBattlefieldApply) {
-        effect.onBattlefieldApply(this, caster, targets, ability);
+        effect.onBattlefieldApply(this, caster, targets, ability, item);
       }
       targets.forEach(target => {
         this.battlefieldEffects[target].push(effect);
@@ -775,7 +803,7 @@ module.exports = class BattleManager {
       for (let i = 0; i < targets.length; i++) {
         let target = targets[i];
         if (effect.onApply) {
-          effect.onApply(this, caster, target, ability);
+          effect.onApply(this, caster, target, ability, item);
         }
         if (!target.alive) {
           this.send(Util.getDisplayName(target) + ' has been slain!');

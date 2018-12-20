@@ -50,10 +50,26 @@ module.exports = class WorldManager {
         this.currentRoomActions = this.getRoomValidActions(this.currentRoom, this.characterInFocus);
         this.currentOptionInfo = null;
         this.send(Util.getDisplayName(this.characterInFocus) + ', you\'re up!');
-        this.send('What would you like to do?', this.currentRoomActions.icons, true);
+        this.send('What would you like to do? If you\'re stuck, press ℹ for more info.', this.currentRoomActions.icons, true);
       } else {
         switch (this.state) {
           case 'EXPLORING':
+            if (react === 'ℹ') {
+              let mapping = {
+                '💬': 'shows you who you can talk to in the room, and lets you talk to them.',
+                '✋': 'shows you what you can interact with in the room, and tells you what you can use to interact with them.',
+                '🔍': 'shows you what you can inspect in the room, basically an interface for using your eyes.',
+                '🗺': 'shows you which directions you can move in, and lets you move. If all doors are locked, this will not be available.',
+                '↕': 'allows you to drop and pick up things from the floor. Be careful! If you leave the room, they may not be there when you return.',
+                '➡': 'swaps you to the battle context, letting you use combat actions out of combat.',
+                '🤷': 'passes your turn, if decisions are too difficult.',
+                'ℹ': 'shows you this, but you already knew that!'
+              };
+              let info = _.without(this.currentRoomActions.icons, '✅').map(icon => icon + ' ' + mapping[icon]).join('\n');
+              this.send('*Here are what the buttons do:*\n' + info, ['🗑']);
+              messageReaction.remove(user);
+              break;
+            }
             if (react !== '✅') break;
             // Option selected, ever get that feeling of dejavu?
             let options = Util.getSelectedOptions(reactions, _.without(this.currentRoomActions.icons, '✅'), user.id);
@@ -197,10 +213,9 @@ module.exports = class WorldManager {
                 messageReaction.remove(user);
               } else {
                 // Set the new state
-                let personLogic = this.currentOptionInfo.person.logic;
-                let currentState = personLogic.onTalk[personLogic.talkState];
-                personLogic.talkState = currentState.result[Util.getEmojiNumbersAsInts(talkOptions)].state;
-                this.handleConversation(this.currentOptionInfo.person);
+                let person = this.currentOptionInfo.person;
+                person.logic.talkState = this.currentOptionInfo.stateList[Util.getEmojiNumbersAsInts(talkOptions) - 1];
+                this.handleConversation(person);
               }
             }
             break;
@@ -320,8 +335,9 @@ module.exports = class WorldManager {
   onBattleComplete () {
     if (this.characterInFocus.alive && this.state.startsWith('SELECT_TALK')) {
       let person = this.currentOptionInfo.person;
+      console.log(person);
       if (person.alive) {
-        person.logic.talkState = person.logic.onTalk[person.logic.talkState].result[2];
+        person.logic.talkState = person.logic.onTalk[person.logic.talkState].result.info.nextState;
         this.handleConversation(person);
         if (this.state.startsWith('SELECT_TALK')) return false;
       }
@@ -341,6 +357,34 @@ module.exports = class WorldManager {
   }
 
   handleConversation (person) {
+    let currentState = person.logic.onTalk[person.logic.talkState];
+    this.send(currentState.responseText(this));
+    if (currentState.onSay) currentState.onSay(this);
+    let {type, info} = currentState.result;
+    switch (type) {
+      case 'OPTIONS':
+        let stateList = info.options.filter(option => {
+          let state = person.logic.onTalk[option];
+          return !state.condition || state.condition(this);
+        });
+        let options = Util.getNumberedList(stateList.map(state => person.logic.onTalk[state].userText));
+        this.currentOptionInfo.options = options;
+        this.currentOptionInfo.stateList = stateList;
+        this.send(Util.getDisplayName(this.characterInFocus) + ', what would you like to say?\n' + options.msg, _.without(options.icons, '🚫'), true);
+        this.state = 'SELECT_TALK_OPTION';
+        break;
+      case 'TALK_OVER':
+        person.logic.talkState = info.newState;
+        this.cleanupCurrentCharacter();
+        break;
+      case 'BATTLE_START':
+        this.gameManager.currentBattle = new BattleManager(this, this.gameManager.players, Encounters.getEncounter(info.encounterName, null, this.currentRoom.entities));
+        this.gameManager.currentBattle.initialise();
+        break;
+    }
+  }
+
+  handleConversationOld (person) {
     let currentState = person.logic.onTalk[person.logic.talkState];
     this.send(currentState.text);
     if (currentState.onSay) currentState.onSay(this);
@@ -427,7 +471,7 @@ module.exports = class WorldManager {
     // Give player option to pick up and drop things from the floor out of combat
     if (char.items.length > 0 || room.floorItems.length > 0) icons.push('↕');
 
-    icons.push('🤷', '➡', '✅'); // Can always pass, can always swap to battle mode
+    icons.push('🤷', 'ℹ', '➡', '✅'); // Can always pass, can always get info, can always swap to battle mode
 
     return {actions: actionList, icons: icons};
   }

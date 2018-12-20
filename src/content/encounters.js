@@ -24,6 +24,42 @@ let encounters = {
       [],
       []
     ]
+  },
+  newtorial: {
+    name: 'The one and only Kiki',
+    description: 'How do I skip this?',
+    positions: {
+      position2: [
+        'Kiki'
+      ]
+    },
+    effects: [
+      [],
+      // [Effects.getEffect('No Escape')],
+      [],
+      [],
+      // [Effects.getEffect('Cautious Cliffside')],
+      [],
+      [],
+      []
+    ]
+  },
+  sampleDeath: {
+    name: 'A death test dummy',
+    description: 'Is this a test framework?',
+    positions: {
+      position3: [
+        'Test Death'
+      ]
+    },
+    effects: [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   }
 };
 
@@ -41,7 +77,7 @@ exports.getEncounter = function (name, displayName, entities) {
       if (entities) {
         for (let j = 0; j < entities.length; j++) {
           if (entities[j].name === positionsCopy[pos][i]) {
-            entity = entities.slice(j, 1)[0];
+            entity = entities.splice(j, 1)[0];
             break;
           }
         }

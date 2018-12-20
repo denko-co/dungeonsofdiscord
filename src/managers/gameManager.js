@@ -130,6 +130,9 @@ module.exports = class GameManager {
         if (lastActivityResult) { // If the battle is now over
           if (!this.currentBattle.isTemporary) {
             this.battleNumber++;
+            // Do loot distro
+            this.handleLootDistribution(reactionInfo, this.currentBattle);
+            if (this.currentBattle.itemsToDistribute.length > 0) return this.sendAll();
             lastActivityResult = this.world.onBattleComplete(); // World should exist here
             if (!lastActivityResult) return this.sendAll(); // We are back in conversation, let the person respond
           } else {
@@ -160,6 +163,35 @@ module.exports = class GameManager {
     } while (battleCreated); // Only go back around if the gameManager has created a new battle
 
     return this.sendAll(); // All done!
+  }
+
+  // Function to handle loot distribution
+  handleLootDistribution (reactionInfo, battle) {
+    let players = Util.getEffectiveCharacters(this.players).players;
+    if (battle) {
+      // Battle just finished, generate the listo
+      battle.itemsToDistribute = [].concat(...battle.graveyard.filter(dead => !dead.controller).map(dead => dead.items));
+      /*
+      if (players.length === 1) {
+        players[0].items.push(...battle.itemsToDistribute.forEach(item => {
+          item.equipped = false;
+          item.owner = players[0];
+        }));
+        battle.itemsToDistribute = [];
+      } else if (battle.itemsToDistribute.length > 0) {
+      */
+      this.send('Welcome to ***Need or Greed***, the show where bodies are looted, RNG is rampant, and most importantly, the contribution to the previous fight *doesn\'t matter.*');
+      this.send('Let\'s get started!');
+      // }
+    } else {
+      // Reaction comes in, let's see if we need to run the distribution
+    }
+    if (battle.itemsToDistribute.length > 0) {
+      let itemToGive = battle.itemsToDistribute[0];
+      this.send('Who wants a *' + Util.getDisplayName(itemToGive) + '*?' + Util.getNeedOrGreedStartText());
+      this.send('Here\'s the info:\n' + itemToGive.getItemDetails() + '\n');
+      this.send('Press 🙆 to roll Need, 🤷 to roll Greed, or 🙅 to pass. When you\'re ready, press ✅', ['🙆', '🤷', '🙅', '✅'], true);
+    }
   }
 
   // Function to handle the ready up logic
@@ -229,7 +261,7 @@ module.exports = class GameManager {
     }
     if (playerToChooseClass) {
       this.send(`${Util.getMention(playerToChooseClass)}, choose your class!\n` +
-        `For more info about a class, type \`!info <class number>\`\n` + classList.msg, classList.icons, true);
+        `For more info about a class, select one, then press ℹ.\n` + classList.msg, classList.icons, true);
     } else {
       // Start the game!
       this.send('Alright, everyone\'s chosen. Let\'s get started!');

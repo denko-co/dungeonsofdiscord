@@ -84,8 +84,8 @@ exports.addReactions = function (message, reactionsArray) {
 };
 
 exports.getVsText = function (vs) {
-  let lbreak = '------------\n';
-  return lbreak + 'Our heroes!\n**vs**\n' + vs + '!\n' + lbreak;
+  let lbreak = '------------';
+  return lbreak + '\nOur heroes!\n**vs**\n' + vs + '!\n' + lbreak;
 };
 
 // Now THIS is a good meme
@@ -110,6 +110,16 @@ exports.getBattleStartText = function () {
     'It\'s on!'
   ];
   return _.sample(wallop);
+};
+
+exports.getNeedOrGreedStartText = function () {
+  const start = [
+    'I have a feeling the old owner doesn\'t need it...',
+    'In mint condition! Well, apart from the blood, that is.',
+    'Think of the possibilities!',
+    'Would make a good trophy of this epic battle, eh?'
+  ];
+  return _.sample(start);
 };
 
 exports.getEffectiveCharacters = function (arrayOfArrays) {

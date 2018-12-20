@@ -9,7 +9,7 @@ let rooms = {
     name: 'Kiki\'s Camp',
     showName: true,
     directions: {
-      right: true
+      right: false
     },
     onEnter (worldManager) {
       if (this.visited) {
@@ -24,7 +24,7 @@ let rooms = {
     build () {
       const door = Interactables.getInteractable('Dungeon Door', {direction: 'right'});
       const lever = Interactables.getInteractable('Dungeon Lever', {door: door});
-      return [Creatures.getCreature('Old Man'), door, lever];
+      return [Creatures.getCreature('Kiki'), Creatures.getCreature('Test Death'), door, lever];
     }
   },
   anEmptyRoom: {

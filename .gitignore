@@ -1,4 +1,4 @@
 node_modules/
 package-lock.json
 credentials.json
-dod.code-workspace
+*.code-workspace

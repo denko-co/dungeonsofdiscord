@@ -13,7 +13,7 @@ let effects = {
       getDamage: 'function'
     },
     properties: {
-      onApply (manager, caster, target, ability) {
+      onApply (manager, caster, target, ability, item) {
         target.dealDamage(this.getDamage(), caster, manager, ability);
       }
     }
@@ -29,6 +29,19 @@ let effects = {
     properties: {
       onRecieveDamage (dmg, target, source, ability) {
         return this.baseReduce(dmg);
+      }
+    }
+  },
+  blessingOfKiki: {
+    name: 'Blessing Of Kiki',
+    description: 'Literally take no damage.',
+    flavour: 'Can\'t touch this!',
+    ticks: null,
+    properties: {
+      damagePings: 0,
+      onRecieveDamage (dmg, target, source, ability) {
+        this.damagePings++;
+        return 0;
       }
     }
   },
@@ -64,7 +77,7 @@ let effects = {
       toSummon: 'array'
     },
     properties: {
-      onBattlefieldApply (battleManager, caster, locationsArray, ability) {
+      onBattlefieldApply (battleManager, caster, locationsArray, ability, item) {
         let currentSummon = 0;
         let summonedNames = [];
         for (let i = 0; i < locationsArray.length; i++) {
@@ -87,13 +100,39 @@ let effects = {
       toGive: 'array'
     },
     properties: {
-      onApply (manager, caster, target, ability) {
+      onApply (manager, caster, target, ability, item) {
         for (let i = 0; i < this.toGive.length; i++) {
           let newItem = Items.getItem(this.toGive[i]);
           newItem.owner = target;
           target.items.push(newItem);
           manager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.displayName + '**: *' + newItem.flavour + '*');
         }
+      }
+    }
+  },
+  giveItemForEach: {
+    name: 'Give Item For Each',
+    description: 'Gives a collection of items to a player for each player in the game. Should resolve immediately.',
+    flavour: 'Sharing is caring, and I don\'t care.',
+    required: {
+      toGive: 'array'
+    },
+    properties: {
+      onApply (manager, caster, target, ability, item) {
+        console.log('We in here');
+        let gameManager = manager.worldManager ? manager.worldManager.gameManager : manager.gameManager;
+        let players = gameManager.playerIds.length;
+        let itemsList = [];
+        this.toGive.forEach(item => {
+          for (let i = 0; i < players; i++) {
+            let newItem = Items.getItem(item);
+            newItem.owner = target;
+            itemsList.push(newItem);
+          }
+        });
+        let stringList = Util.formattedList(Util.reduceList(itemsList.map(item => Util.getDisplayName(item))));
+        manager.send(Util.getDisplayName(target) + ' has recieved **' + stringList + '.**');
+        target.items.push(...itemsList);
       }
     }
   },
@@ -153,9 +192,55 @@ let effects = {
       getHealing: 'function'
     },
     properties: {
-      onApply (manager, caster, target, ability) {
+      onApply (manager, caster, target, ability, item) {
         caster.dealDamage(this.getDamage(), caster, manager, ability);
         target.heal(this.getHealing(), caster, manager, ability);
+      }
+    }
+  },
+  unboxing: {
+    name: 'Unboxing',
+    description: 'Opening some sweet loot! Or maybe three commons and a rare.',
+    flavour: 'Overwatch meme, not a hearthstone one.',
+    ticks: 1,
+    properties: {
+      /*
+      onApply (manager, caster, target, ability, item) {
+        this.appliedBy = item;
+      },
+      */
+      onTick (manager, source, target) {
+        // Get all the current players, from the manager
+        let gameManager = manager.worldManager ? manager.worldManager.gameManager : manager.gameManager;
+        let players = Util.getEffectiveCharacters(gameManager.players).players;
+        if (players.every(player => player.effects.find(effect => effect.name === 'Unboxing'))) {
+          // All players unboxing, give them their loot
+          let mapping = {
+            'Battle Medic': [
+              'Spiked Shield'
+            ]
+          };
+          players.forEach(player => {
+            let itemList = mapping[player.name];
+            itemList.forEach(item => {
+              let newItem = Items.getItem(item);
+              newItem.owner = target;
+              newItem.equipped = true;
+              target.items.push(newItem);
+              manager.send(Util.getDisplayName(target) + ' has recieved **' + newItem.displayName + '**: *' + newItem.flavour + '*');
+            });
+            for (let i = player.effects.length - 1; i >= 0; i--) {
+              if (player.effects[i].name === 'Unboxing') {
+                player.effects.splice(i, 1);
+              }
+            };
+            for (let i = player.items.length - 1; i >= 0; i--) {
+              if (player.items[i].name === 'Loot Box') {
+                player.items.splice(i, 1);
+              }
+            };
+          });
+        }
       }
     }
   }

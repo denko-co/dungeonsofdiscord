@@ -10,7 +10,7 @@ module.exports = class PlayerManager {
     // Might run into problems here trying to restore a `message` from the db
     user.send(this.getIntroText().text).then((message) => {
       this.cardMessage = message;
-      return Util.addReactions(message, ['❤', '🤸', '👜', '⚔', '🗺']);
+      return Util.addReactions(message, ['❤', '🤸', '👜', '📰', '🗺']);
     });
   }
 
@@ -21,7 +21,7 @@ module.exports = class PlayerManager {
       '❤': 'getPlayerOverviewText',
       '🤸': 'getPlayerLoadoutText',
       '👜': 'getPlayerInventoryText',
-      '⚔': 'getBattleInfo',
+      '📰': 'getBattleInfo',
       '🗺': 'getFloorMap'
     };
     // Can't remove reactions in DM's!
@@ -75,10 +75,10 @@ module.exports = class PlayerManager {
       if (loadout[slot].length === 0) {
         text += ' *empty*\n';
       } else {
-        loadout[slot].forEach(item => {
-          text += '\n' + item.getItemDetails();
-        });
         text += '\n';
+        loadout[slot].forEach(item => {
+          text += item.getItemDetails() + '\n';
+        });
       }
       text += '\n';
     }
@@ -125,7 +125,7 @@ module.exports = class PlayerManager {
     text += `❤ shows core info about you, like your HP and any effects currently applied.\n`;
     text += `🤸 shows what you currently have equipped and what those things do, plus any state info.\n`;
     text += `👜 shows what you currently have in your bag. As the bag is bottomless, this is an overview, with drilldowns.\n`;
-    text += `⚔ shows battle info, so your position in an out of combat, HP of allies, and any in battle effect positions.\n`;
+    text += `📰 shows battle info, so your position in an out of combat, HP of allies, and any in battle effect positions.\n`;
     text += `Finally, 🗺 shows world info, specifically, the current floor, where you are, and any points of interest.\n`;
     // text += `Finally, 📖 opens up the manual, which tells you what buttons do in the game.\n\n`;
     // text += `Phew, a lot of reading for a text based adventure eh? If you ever get stuck, you can always come back here using the ❓ button.\n`;

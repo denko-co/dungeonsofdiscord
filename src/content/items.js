@@ -35,6 +35,21 @@ let items = {
     icon: '⚙',
     slot: 'hand'
   },
+  lootBox: {
+    name: 'Loot Box',
+    description: 'Who knows what\'s inside?',
+    abilityNames: [
+      'Pop The Locks'
+    ],
+    icon: '📥',
+    slot: 'hand2'
+  },
+  sudokuBooklet: {
+    name: 'Sudoku Booklet',
+    description: 'All of the pages are worn - and all the puzzles have been solved.',
+    slot: 'hand',
+    icon: '🔢'
+  },
   bottledAnxiety: {
     name: 'Bottled Anxiety',
     description: 'A small vibrating vial of grey liquid. I wonder what this does?',
@@ -77,6 +92,7 @@ exports.getItem = function (name, displayName) {
       }
     }
   }
+
   let itemToAdd = new Item(itemDetails.name, displayName || itemDetails.name, itemDetails.description, itemDetails.flavour, itemDetails.icon, itemDetails.slot, abilities, itemDetails.effects, itemDetails.onUse);
   return itemToAdd;
 };

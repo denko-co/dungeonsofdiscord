@@ -23,6 +23,15 @@ module.exports = class Character {
     for (let logicEle in this.logic) {
       if (typeof this.logic[logicEle] === 'function') {
         this.logic[logicEle] = this.logic[logicEle].bind(this);
+      } else if (logicEle === 'onTalk') {
+        // Lord forgive me. Bind each onTalk state function (like `condition`)
+        for (let state in this.logic[logicEle]) {
+          for (let prop in this.logic[logicEle][state]) {
+            if (typeof this.logic[logicEle][state][prop] === 'function') {
+              this.logic[logicEle][state][prop] = this.logic[logicEle][state][prop].bind(this);
+            }
+          }
+        }
       }
     }
 
@@ -128,13 +137,14 @@ module.exports = class Character {
     return false;
   }
 
-  hasEffect (effectName, manager) {
+  getEffect (effectName, manager) {
     let effects = this.getAllEffects(manager);
+    console.log(effects);
     for (let i = 0; i < effects.length; i++) {
       // Use real name to correctly identify effect
-      if (effects[i].name === effectName) return true;
+      if (effects[i].name === effectName) return effects[i];
     }
-    return false;
+    return null;
   }
 
   getAllEffects (manager) {
