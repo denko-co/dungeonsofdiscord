@@ -41,7 +41,7 @@ let effects = {
       damagePings: 0,
       onRecieveDamage (dmg, target, source, ability) {
         this.damagePings++;
-        return 0;
+        return null;
       }
     }
   },
@@ -195,6 +195,59 @@ let effects = {
       onApply (manager, caster, target, ability, item) {
         caster.dealDamage(this.getDamage(), caster, manager, ability);
         target.heal(this.getHealing(), caster, manager, ability);
+      }
+    }
+  },
+  repeatingShot: {
+    name: 'Repeating Shot',
+    description: 'Attacks on the same target deal 2 damage more each time you hit them.',
+    flavour: 'The description for this is inadequate and I feel we need a keyword for it.',
+    ticks: null,
+    properties: {
+      onDealDamage (dmg, target, source, ability) {
+        if (target === source) {
+          return dmg;
+        } else if (this.currentTarget === target) {
+          this.currentTargetHitCount++;
+          console.log('hit no. ' + this.currentTargetHitCount + ' to ' + Util.getDisplayName(target));
+          return dmg + this.currentTargetHitCount * 2;
+        } else {
+          this.currentTarget = target;
+          this.currentTargetHitCount = 0;
+          console.log('new target: ' + Util.getDisplayName(target));
+          return dmg;
+        }
+      }
+    }
+  },
+  healAndCure: {
+    name: 'Heal And Cure',
+    description: 'Heal the target with a 50% chance of curing effects placed on them.',
+    flavour: 'This does not feel generic enough to be an effect.',
+    ticks: 1,
+    required: {
+      getHealing: 'function',
+      doesCure: 'function'
+    },
+    properties: {
+      onApply (manager, caster, target, ability, item) {
+        target.heal(this.getHealing(), caster, manager, ability);
+        if (this.doesCure() === true) {
+          target.cure(manager, null, 'Stabilise');
+        }
+      }
+    }
+  },
+  poison: {
+    name: 'Poison',
+    description: 'Passively removes 2 HP each turn.',
+    flavour: 'Cookies and Cream ;)',
+    ticks: 5,
+    properties: {
+      onTick (manager, source, target) {
+        // if (source.currenthp !== source.hp) {
+        source.dealDamage(2, source, manager, null, ' from poison');
+        // }
       }
     }
   },

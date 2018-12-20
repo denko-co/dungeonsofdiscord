@@ -222,6 +222,41 @@ let abilities = {
       number: 1
     },
     range: 2
+  },
+  snipe: {
+    name: 'Snipe',
+    description: 'Deal 4-6 damage to a target.',
+    type: ['DAMAGE'],
+    icon: '🎯',
+    effect: Effects.getEffect('Flat Damage', {
+      getDamage: function () {
+        return _.random(4, 6);
+      }
+    }),
+    targets: {
+      number: 1,
+      type: 'ALLY'
+    },
+    range: 6
+  },
+  stabilise: {
+    name: 'Stabilise',
+    description: 'Heal a friendly character for 2 health, with 50% chance to cure each damaging effect on a character.',
+    type: ['HEAL'],
+    icon: '⚖',
+    effect: Effects.getEffect('Heal And Cure', {
+      getHealing: function () {
+        return 2;
+      },
+      doesCure: function () {
+        return Math.random() > 0.5;
+      }
+    }),
+    targets: {
+      number: 1,
+      type: 'ALLY'
+    },
+    range: 6
   }
 };
 

@@ -35,6 +35,16 @@ let items = {
     icon: '⚙',
     slot: 'hand'
   },
+  trustyLongbow: {
+    name: 'Trusty Longbow',
+    description: 'A ranged offensive beginner\'s item.',
+    flavour: 'The best offense is launched from far enough away that they can\'t hurt you.',
+    abilityNames: [
+      'Snipe'
+    ],
+    icon: '🏹',
+    slot: 'hand'
+  },
   lootBox: {
     name: 'Loot Box',
     description: 'Who knows what\'s inside?',

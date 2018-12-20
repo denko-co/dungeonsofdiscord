@@ -27,7 +27,7 @@ let creatures = {
           responseText (worldManager) {
             return '...';
           },
-          result: { type: 'BATTLE_START', info: {encounterName: 'Newtorial', nextState: 'itsOva'}}
+          result: { type: 'BATTLE_START', info: {encounterName: 'blessedTesting', nextState: 'itsOva'}}
           // result: { type: 'OPTIONS', info: {options: ['who', 'why', 'buy', 'open', 'open2', 'open3']}}
         }
       },

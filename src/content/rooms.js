@@ -24,7 +24,8 @@ let rooms = {
     build () {
       const door = Interactables.getInteractable('Dungeon Door', {direction: 'right'});
       const lever = Interactables.getInteractable('Dungeon Lever', {door: door});
-      return [Creatures.getCreature('Kiki'), Creatures.getCreature('Test Death'), door, lever];
+      return [Creatures.getCreature('Kiki'), Creatures.getCreature('Test Death'), 
+        Creatures.getCreature('Blessed Training Dummy'), door, lever];
     }
   },
   anEmptyRoom: {

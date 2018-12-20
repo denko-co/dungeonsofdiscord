@@ -60,6 +60,23 @@ let encounters = {
       [],
       []
     ]
+  },
+  blessedTesting: {
+    name: 'Making sure battles can happen from dum(my) things',
+    description: 'Not a test framework',
+    positions: {
+      position1: [
+        'Blessed Training Dummy'
+      ]
+    },
+    effects: [
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
   }
 };
 

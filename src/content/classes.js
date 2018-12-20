@@ -37,7 +37,13 @@ let classes = {
       items in the strangest of places.`,
     hp: 10,
     itemNames: [
-      'Training Sword'
+      'Trusty Longbow'
+    ],
+    abilityNames: [
+      'Stabilise'
+    ],
+    effects: [
+      'Repeating Shot'
     ]
   },
   rogueBard: {

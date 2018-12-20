@@ -57,8 +57,11 @@ module.exports = class Character {
 
     let damageModifiers = this.getListeningEffects(manager, 'onRecieveDamage');
     let modifiedDamage = damageModifiers.reduce((currentDamage, ele) => {
+      if (currentDamage === null) {
+        return null;
+      }
       let newDamage = ele.onRecieveDamage(currentDamage, this, source, ability);
-      return newDamage < 0 ? 0 : newDamage;
+      return newDamage === null ? newDamage : (newDamage < 0 ? 0 : newDamage);
     }, amount);
 
     let dealDamageModifiers = source.getListeningEffects(manager, 'onDealDamage');
@@ -98,6 +101,19 @@ module.exports = class Character {
       this.alive = true;
     }
     return modifiedHealing;
+  }
+
+  cure (manager, effect, reason) {
+    if (effect === null) {
+      // cure all curable effects
+      for (let i = this.effects.length - 1; i >= 0; i--) {
+        if (this.effects[i].ticks !== null) {
+          this.effects.splice(i, 1);
+        }
+      };
+      manager.send('All effects on ' + Util.getDisplayName(this) + ' were cured by ' +
+        reason + '.');
+    }
   }
 
   cleanupEffect (character, manager) {
